@@ -1,0 +1,6 @@
+Modal H100 run (forward + grad-grad)
+math forward:   0.212 ms
+triton forward: 0.137 ms
+
+gradgrad math:   1.150 ms
+gradgrad triton: 1.600 ms

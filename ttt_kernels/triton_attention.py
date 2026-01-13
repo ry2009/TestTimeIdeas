@@ -103,7 +103,7 @@ class TritonAttentionFn(torch.autograd.Function):
             return _attention_math(q, k, v, causal, scale)
 
         b, h, t, d = q.shape
-        if d > 128:
+        if d > 128 or q.dtype not in (torch.float16, torch.bfloat16):
             return _attention_math(q, k, v, causal, scale)
 
         qh = q.reshape(b * h, t, d)

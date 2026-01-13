@@ -31,6 +31,10 @@ math forward:   X.XXX ms
 triton forward: Y.YYY ms
 ```
 
+Latest Modal H100 run (saved in `artifacts/modal_bench_h100.txt`):
+- **forward**: triton 0.137 ms vs math 0.212 ms (win)
+- **grad‑grad**: triton 1.600 ms vs math 1.150 ms (still slower)
+
 ## Grad‑grad check
 
 ```bash
@@ -50,6 +54,8 @@ python -m tests.bench_gradgrad --device cpu --compile
 ```
 
 On GPU, drop `--device cpu` and it will run both math + triton.
+
+Note: the Triton path is enabled for fp16/bf16 inputs; fp32 falls back to math.
 
 ## Modal (GPU without SSH)
 

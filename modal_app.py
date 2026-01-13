@@ -19,17 +19,17 @@ image = (
         "nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04",
         add_python="3.10",
     )
+    .apt_install("build-essential")
     .pip_install(
         "torch==2.3.1",
-        "--index-url",
-        "https://download.pytorch.org/whl/cu121",
+        extra_options="--index-url https://download.pytorch.org/whl/cu121",
     )
-    .pip_install("triton==2.3.0", "numpy")
-)
-
-repo_mount = modal.Mount.from_local_dir(
-    os.path.dirname(__file__),
-    remote_path="/root/TestTimeIdeas",
+    .pip_install("numpy")
+    .add_local_dir(
+        os.path.dirname(__file__),
+        remote_path="/root/TestTimeIdeas",
+        ignore=[".git", "__pycache__", ".mypy_cache", ".pytest_cache"],
+    )
 )
 
 
@@ -41,7 +41,6 @@ def _run(cmd: str) -> str:
 @app.function(
     gpu="H100",
     image=image,
-    mounts=[repo_mount],
     timeout=60 * 30,
 )
 def run_bench():
@@ -49,7 +48,7 @@ def run_bench():
     os.chdir("/root/TestTimeIdeas")
     out = []
     out.append(_run("python tests/bench.py --b 2 --h 4 --t 2048 --d 128 --dtype fp16 --iters 50"))
-    out.append(_run("python tests/bench_gradgrad.py --b 2 --h 2 --t 128 --d 64 --dtype fp32"))
+    out.append(_run("python tests/bench_gradgrad.py --b 2 --h 2 --t 128 --d 64 --dtype fp16"))
     return "\n".join(out)
 
 

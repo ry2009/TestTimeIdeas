@@ -44,7 +44,7 @@ def main():
     parser.add_argument('--h', type=int, default=2)
     parser.add_argument('--t', type=int, default=128)
     parser.add_argument('--d', type=int, default=64)
-    parser.add_argument('--dtype', type=str, default='fp32', choices=['fp16', 'bf16', 'fp32'])
+    parser.add_argument('--dtype', type=str, default='fp16', choices=['fp16', 'bf16', 'fp32'])
     parser.add_argument('--device', type=str, default='auto', choices=['auto', 'cpu', 'cuda'])
     parser.add_argument('--causal', action='store_true')
     parser.add_argument('--compile', action='store_true')
