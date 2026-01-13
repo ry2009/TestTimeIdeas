@@ -1,31 +1,46 @@
-Modal H100 run (forward + grad‑grad, recompute/recompute_manual/recompute_sdp/recompute_sdp_auto/save_p)
+Modal H100 run: https://modal.com/apps/ryanmathieu123/main/ap-pu6A5JGTB43Tb7rLHPa9zO
 
-Forward (b=2,h=4,t=2048,d=128,fp16):
-  math   0.211 ms
-  triton 0.131 ms  (win)
+math forward:   0.214 ms
+triton forward: 0.121 ms
 
-Grad‑grad t=128,d=64 (fp16):
-  recompute        math 1.207 ms | triton 1.731 ms (loss)
-  recompute_manual math 1.171 ms | triton 1.553 ms (loss)
-  recompute_sdp    math 1.197 ms | triton 1.698 ms (loss)
-  recompute_sdp_auto: FAILED (flash backward has no 2nd‑order)
-  save_p           math 1.183 ms | triton 1.118 ms (win)
+# t=128 d=64
+recompute
+  gradgrad math:   1.005 ms
+  gradgrad triton: 1.452 ms
+recompute_manual
+  gradgrad math:   1.009 ms
+  gradgrad triton: 1.240 ms
+recompute_sdp (math backend)
+  gradgrad math:   1.008 ms
+  gradgrad triton: 1.406 ms
+save_p (cached softmax)
+  gradgrad math:   0.992 ms
+  gradgrad triton: 0.852 ms
 
-Grad‑grad t=512,d=128 (fp16):
-  recompute        math 1.308 ms | triton 1.764 ms (loss)
-  recompute_manual math 1.278 ms | triton 1.789 ms (loss)
-  recompute_sdp    math 1.280 ms | triton 1.924 ms (loss)
-  recompute_sdp_auto: FAILED (flash backward has no 2nd‑order)
-  save_p           math 1.277 ms | triton 1.179 ms (win)
+# t=512 d=128
+recompute
+  gradgrad math:   1.085 ms
+  gradgrad triton: 1.439 ms
+recompute_manual
+  gradgrad math:   0.962 ms
+  gradgrad triton: 1.426 ms
+recompute_sdp (math backend)
+  gradgrad math:   0.960 ms
+  gradgrad triton: 1.531 ms
+save_p (cached softmax)
+  gradgrad math:   0.991 ms
+  gradgrad triton: 0.918 ms
 
-Grad‑grad t=1024,d=128 (fp16):
-  recompute        math 1.256 ms | triton 1.707 ms (loss)
-  recompute_manual math 1.280 ms | triton 1.635 ms (loss)
-  recompute_sdp    math 1.224 ms | triton 1.875 ms (loss)
-  recompute_sdp_auto: FAILED (flash backward has no 2nd‑order)
-  save_p           math 1.327 ms | triton 1.071 ms (win)
-
-Notes:
-- recompute_compiled failed: torch.compile does not support double backward.
-- recompute_sdp_auto fails: flash backward has no 2nd‑order.
-- save_p trades memory for speed; recompute remains slower.
+# t=1024 d=128
+recompute
+  gradgrad math:   1.018 ms
+  gradgrad triton: 1.438 ms
+recompute_manual
+  gradgrad math:   0.987 ms
+  gradgrad triton: 1.325 ms
+recompute_sdp (math backend)
+  gradgrad math:   1.011 ms
+  gradgrad triton: 1.444 ms
+save_p (cached softmax)
+  gradgrad math:   0.990 ms
+  gradgrad triton: 0.870 ms

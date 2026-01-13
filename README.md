@@ -31,12 +31,11 @@ math forward:   X.XXX ms
 triton forward: Y.YYY ms
 ```
 
-Latest Modal H100 run (saved in `artifacts/modal_bench_h100.txt`):
-- **forward**: triton 0.137 ms vs math 0.212 ms (win)
+Latest Modal H100 run (saved in `artifacts/modal_bench_h100_latest.txt`):
+- **forward**: triton 0.121 ms vs math 0.214 ms (win)
 - **grad‑grad (recompute)**: still slower than math
 - **grad‑grad (save_p)**: faster than math (win, memory tradeoff)
 
-Most recent sweep is also saved in `artifacts/modal_bench_h100_latest.txt`.
 Current status: **recompute modes are still slower; only `save_p` wins.**
 
 ## Grad‑grad check

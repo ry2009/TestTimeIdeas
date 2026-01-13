@@ -49,7 +49,7 @@ def main():
     parser.add_argument('--causal', action='store_true')
     parser.add_argument('--compile', action='store_true')
     parser.add_argument('--bwd_mode', type=str, default='recompute',
-                        choices=['recompute', 'recompute_manual', 'recompute_sdp', 'recompute_sdp_auto', 'save_p', 'recompute_compiled', 'dv_only', 'custom'])
+                        choices=['recompute', 'recompute_manual', 'recompute_sdp', 'recompute_sdp_mem', 'recompute_sdp_auto', 'save_p', 'recompute_compiled', 'dv_only', 'custom'])
     args = parser.parse_args()
 
     if args.device == 'auto':
