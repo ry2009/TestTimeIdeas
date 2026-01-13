@@ -118,8 +118,70 @@ if _TRITON_AVAILABLE:
             num_stages=2,
         )
         return dvh.reshape(b, h, t, d)
+
+    @triton.jit
+    def _attn_bwd_dv_from_p_kernel(
+        p_ptr, do_ptr, dv_ptr,
+        stride_pb, stride_pm, stride_pn,
+        stride_dob, stride_dom, stride_dok,
+        stride_dvb, stride_dvn, stride_dvk,
+        n_ctx, d_head,
+        BLOCK_M: tl.constexpr,
+        BLOCK_N: tl.constexpr,
+        BLOCK_D: tl.constexpr,
+    ):
+        pid_n = tl.program_id(0)
+        pid_d = tl.program_id(1)
+        pid_bh = tl.program_id(2)
+
+        offs_n = pid_n * BLOCK_N + tl.arange(0, BLOCK_N)
+        offs_d = pid_d * BLOCK_D + tl.arange(0, BLOCK_D)
+        acc = tl.zeros((BLOCK_N, BLOCK_D), tl.float32)
+
+        for start_m in range(0, n_ctx, BLOCK_M):
+            offs_m = start_m + tl.arange(0, BLOCK_M)
+            p_ptrs = p_ptr + pid_bh * stride_pb + offs_m[:, None] * stride_pm + offs_n[None, :] * stride_pn
+            do_ptrs = do_ptr + pid_bh * stride_dob + offs_m[:, None] * stride_dom + offs_d[None, :] * stride_dok
+            p = tl.load(p_ptrs, mask=(offs_m[:, None] < n_ctx) & (offs_n[None, :] < n_ctx), other=0.0)
+            do = tl.load(do_ptrs, mask=(offs_m[:, None] < n_ctx) & (offs_d[None, :] < d_head), other=0.0)
+            acc += tl.dot(tl.trans(p).to(tl.float16), do)
+
+        dv_ptrs = dv_ptr + pid_bh * stride_dvb + offs_n[:, None] * stride_dvn + offs_d[None, :] * stride_dvk
+        tl.store(dv_ptrs, acc, mask=(offs_n[:, None] < n_ctx) & (offs_d[None, :] < d_head))
+
+
+    def triton_attn_bwd_dv_from_p(p, do):
+        b, h, t, d = do.shape
+        ph = p.reshape(b * h, t, t)
+        doh = do.reshape(b * h, t, d)
+        dvh = torch.empty_like(doh)
+
+        stride_pb, stride_pm, stride_pn = ph.stride()
+        stride_dob, stride_dom, stride_dok = doh.stride()
+        stride_dvb, stride_dvn, stride_dvk = dvh.stride()
+
+        BLOCK_M = 64
+        BLOCK_N = 64
+        BLOCK_D = 64 if d <= 64 else 128
+        grid = (triton.cdiv(t, BLOCK_N), triton.cdiv(d, BLOCK_D), b * h)
+
+        _attn_bwd_dv_from_p_kernel[grid](
+            ph, doh, dvh,
+            stride_pb, stride_pm, stride_pn,
+            stride_dob, stride_dom, stride_dok,
+            stride_dvb, stride_dvn, stride_dvk,
+            t, d,
+            BLOCK_M=BLOCK_M,
+            BLOCK_N=BLOCK_N,
+            BLOCK_D=BLOCK_D,
+            num_warps=4,
+            num_stages=2,
+        )
+        return dvh.reshape(b, h, t, d)
 else:
     def triton_attn_bwd_dv(*args, **kwargs):
+        raise RuntimeError('Triton is not available')
+    def triton_attn_bwd_dv_from_p(*args, **kwargs):
         raise RuntimeError('Triton is not available')
 
 

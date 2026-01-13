@@ -1,54 +1,66 @@
-Modal H100 run: https://modal.com/apps/ryanmathieu123/main/ap-6AqbnbhJbtlvc3LzG0aNyn
+Modal H100 run: https://modal.com/apps/ryanmathieu123/main/ap-kimWWprZ51Ui399hQeFtik
 
-math forward:   0.212 ms
-triton forward: 0.139 ms
+math forward:   0.213 ms
+triton forward: 0.133 ms
 
 # t=128 d=64
 recompute
-  gradgrad math:   1.228 ms
-  gradgrad triton: 1.730 ms
+  gradgrad math:   1.217 ms
+  gradgrad triton: 1.736 ms
 recompute_manual
-  gradgrad math:   1.246 ms
-  gradgrad triton: 1.652 ms
+  gradgrad math:   1.153 ms
+  gradgrad triton: 1.630 ms
 recompute_sdp (math backend)
-  gradgrad math:   1.158 ms
-  gradgrad triton: 1.788 ms
+  gradgrad math:   1.199 ms
+  gradgrad triton: 1.811 ms
 save_p (cached softmax)
-  gradgrad math:   1.155 ms
-  gradgrad triton: 1.032 ms
+  gradgrad math:   1.305 ms
+  gradgrad triton: 1.167 ms
+save_p_triton_bwd (Triton dV)
+  gradgrad math:   1.160 ms
+  gradgrad triton: 1.247 ms
 
 # t=512 d=128
 recompute
-  gradgrad math:   1.355 ms
-  gradgrad triton: 1.839 ms
+  gradgrad math:   1.288 ms
+  gradgrad triton: 1.815 ms
 recompute_manual
-  gradgrad math:   1.347 ms
-  gradgrad triton: 1.726 ms
+  gradgrad math:   1.273 ms
+  gradgrad triton: 1.711 ms
 recompute_sdp (math backend)
-  gradgrad math:   1.264 ms
-  gradgrad triton: 1.904 ms
+  gradgrad math:   1.263 ms
+  gradgrad triton: 1.908 ms
 save_p (cached softmax)
-  gradgrad math:   1.306 ms
-  gradgrad triton: 1.264 ms
+  gradgrad math:   1.239 ms
+  gradgrad triton: 1.183 ms
+save_p_triton_bwd (Triton dV)
+  gradgrad math:   1.225 ms
+  gradgrad triton: 1.391 ms
 
 # t=1024 d=128
 recompute
-  gradgrad math:   1.271 ms
-  gradgrad triton: 1.829 ms
+  gradgrad math:   1.242 ms
+  gradgrad triton: 1.798 ms
 recompute_manual
-  gradgrad math:   1.367 ms
-  gradgrad triton: 1.626 ms
+  gradgrad math:   1.239 ms
+  gradgrad triton: 1.584 ms
 recompute_sdp (math backend)
-  gradgrad math:   1.401 ms
-  gradgrad triton: 2.033 ms
+  gradgrad math:   1.278 ms
+  gradgrad triton: 1.822 ms
 save_p (cached softmax)
-  gradgrad math:   1.261 ms
-  gradgrad triton: 1.080 ms
+  gradgrad math:   1.219 ms
+  gradgrad triton: 1.132 ms
+save_p_triton_bwd (Triton dV)
+  gradgrad math:   1.234 ms
+  gradgrad triton: 1.325 ms
 
 # t=8192 d=64 (b=1,h=1)
 recompute
-  gradgrad math:   4.052 ms
-  gradgrad triton: 4.886 ms
+  gradgrad math:   4.041 ms
+  gradgrad triton: 4.882 ms
 save_p (cached softmax)
-  gradgrad math:   4.064 ms
-  gradgrad triton: 3.457 ms
+  gradgrad math:   4.055 ms
+  gradgrad triton: 3.421 ms
+save_p_triton_bwd (Triton dV)
+  gradgrad math:   4.065 ms
+  gradgrad triton: 3.503 ms

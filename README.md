@@ -32,9 +32,10 @@ triton forward: Y.YYY ms
 ```
 
 Latest Modal H100 run (saved in `artifacts/modal_bench_h100_latest.txt`):
-- **forward**: triton 0.139 ms vs math 0.212 ms (win)
+- **forward**: triton 0.133 ms vs math 0.213 ms (win)
 - **grad‑grad (recompute)**: still slower than math
-- **grad‑grad (save_p)**: faster than math (win, memory tradeoff), incl. **t=8192**: 3.457 ms vs 4.064 ms
+- **grad‑grad (save_p)**: faster than math (win, memory tradeoff), incl. **t=8192**: 3.421 ms vs 4.055 ms
+- **grad‑grad (save_p_triton_bwd)**: Triton dV exists but still slower than cuBLAS matmul (see artifact)
 
 Current status: **recompute modes are still slower; only `save_p` wins.**
 

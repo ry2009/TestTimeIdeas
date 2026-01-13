@@ -51,7 +51,7 @@ def main():
     parser.add_argument('--iters', type=int, default=20)
     parser.add_argument('--warmup', type=int, default=5)
     parser.add_argument('--bwd_mode', type=str, default='recompute',
-                        choices=['recompute', 'recompute_manual', 'recompute_sdp', 'recompute_sdp_mem', 'recompute_sdp_auto', 'save_p', 'save_p_triton', 'recompute_compiled', 'dv_only', 'custom'])
+                        choices=['recompute', 'recompute_manual', 'recompute_sdp', 'recompute_sdp_mem', 'recompute_sdp_auto', 'save_p', 'save_p_triton', 'save_p_triton_bwd', 'recompute_compiled', 'dv_only', 'custom'])
     args = parser.parse_args()
 
     if args.device == 'auto':

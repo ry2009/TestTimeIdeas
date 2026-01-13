@@ -267,7 +267,7 @@ class TritonAttentionFn(torch.autograd.Function):
         ctx.save_for_backward(q, k, v)
         ctx.saved_probs = ()
 
-        if bwd_mode == 'save_p':
+        if bwd_mode in ('save_p', 'save_p_triton_bwd'):
             out, p = _attention_with_probs(q, k, v, causal, scale)
             ctx.saved_probs = (p,)
             return out
@@ -348,11 +348,14 @@ class TritonAttentionFn(torch.autograd.Function):
             dv = backward_stubs.triton_attn_bwd_dv(q, k, v, grad_out, causal=causal, scale=scale)
             return dq, dk, dv, None, None, None
 
-        if ctx.bwd_mode in ('save_p', 'save_p_triton'):
+        if ctx.bwd_mode in ('save_p', 'save_p_triton', 'save_p_triton_bwd'):
             # Use saved softmax probabilities to avoid recompute
             (p,) = ctx.saved_probs
-            # dV = P^T @ dO
-            dv = torch.matmul(p.transpose(-2, -1), grad_out)
+            if ctx.bwd_mode == 'save_p_triton_bwd':
+                dv = backward_stubs.triton_attn_bwd_dv_from_p(p, grad_out)
+            else:
+                # dV = P^T @ dO
+                dv = torch.matmul(p.transpose(-2, -1), grad_out)
             # dP = dO @ V^T
             dp = torch.matmul(grad_out, v.transpose(-2, -1))
             # dS = (dP - sum(dP * P)) * P
