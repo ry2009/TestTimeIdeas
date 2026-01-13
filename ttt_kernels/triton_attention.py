@@ -44,6 +44,21 @@ def _attention_with_probs(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, cau
     return out, attn
 
 
+def _manual_recompute_grads(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, grad_out: torch.Tensor, causal: bool, scale: float):
+    scores = torch.matmul(q, k.transpose(-2, -1)) * scale
+    if causal:
+        t = scores.size(-1)
+        mask = torch.triu(torch.ones((t, t), device=scores.device, dtype=torch.bool), diagonal=1)
+        scores = scores.masked_fill(mask, float('-inf'))
+    p = torch.softmax(scores, dim=-1)
+    dv = torch.matmul(p.transpose(-2, -1), grad_out)
+    dp = torch.matmul(grad_out, v.transpose(-2, -1))
+    ds = (dp - (dp * p).sum(dim=-1, keepdim=True)) * p
+    dq = torch.matmul(ds, k) * scale
+    dk = torch.matmul(ds.transpose(-2, -1), q) * scale
+    return dq, dk, dv
+
+
 if _TRITON_AVAILABLE:
     @triton.autotune(
         configs=[
@@ -179,6 +194,10 @@ class TritonAttentionFn(torch.autograd.Function):
             # dQ = dS @ K * scale, dK = dS^T @ Q * scale
             dq = torch.matmul(ds, k) * scale
             dk = torch.matmul(ds.transpose(-2, -1), q) * scale
+            return dq, dk, dv, None, None, None
+
+        if ctx.bwd_mode == 'recompute_manual':
+            dq, dk, dv = _manual_recompute_grads(q, k, v, grad_out, causal, scale)
             return dq, dk, dv, None, None, None
 
         if ctx.bwd_mode == 'recompute_sdp':

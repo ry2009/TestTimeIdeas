@@ -1,23 +1,26 @@
-Modal H100 run (forward + grad‑grad, recompute + save_p + sdp)
+Modal H100 run (forward + grad‑grad, recompute/recompute_manual/recompute_sdp/save_p)
 
 Forward (b=2,h=4,t=2048,d=128,fp16):
   math   0.213 ms
-  triton 0.242 ms  (loss)
+  triton 0.135 ms  (win)
 
-Grad‑grad (recompute, fp16):
-  t=128,d=64  math 1.473 ms | triton 2.025 ms (loss)
-  t=512,d=128 math 1.455 ms | triton 1.947 ms (loss)
-  t=1024,d=128 math 1.624 ms | triton 1.866 ms (loss)
+Grad‑grad t=128,d=64 (fp16):
+  recompute        math 1.264 ms | triton 1.701 ms (loss)
+  recompute_manual math 1.199 ms | triton 1.683 ms (loss)
+  recompute_sdp    math 1.208 ms | triton 2.031 ms (loss)
+  save_p           math 1.284 ms | triton 1.117 ms (win)
 
-Grad‑grad (recompute_sdp, fp16):
-  t=128,d=64  math 1.422 ms | triton 2.225 ms (loss)
-  t=512,d=128 math 1.538 ms | triton 2.159 ms (loss)
-  t=1024,d=128 math 1.599 ms | triton 2.184 ms (loss)
+Grad‑grad t=512,d=128 (fp16):
+  recompute        math 1.300 ms | triton 1.849 ms (loss)
+  recompute_manual math 1.668 ms | triton 1.736 ms (loss)
+  recompute_sdp    math 1.470 ms | triton 1.926 ms (loss)
+  save_p           math 1.456 ms | triton 1.304 ms (win)
 
-Grad‑grad (save_p, fp16):
-  t=128,d=64  math 1.385 ms | triton 1.281 ms (win)
-  t=512,d=128 math 1.523 ms | triton 1.430 ms (win)
-  t=1024,d=128 math 1.464 ms | triton 1.268 ms (win)
+Grad‑grad t=1024,d=128 (fp16):
+  recompute        math 1.427 ms | triton 1.886 ms (loss)
+  recompute_manual math 1.405 ms | triton 1.781 ms (loss)
+  recompute_sdp    math 1.307 ms | triton 1.850 ms (loss)
+  save_p           math 1.278 ms | triton 1.125 ms (win)
 
 Notes:
 - recompute_compiled failed: torch.compile does not support double backward.
