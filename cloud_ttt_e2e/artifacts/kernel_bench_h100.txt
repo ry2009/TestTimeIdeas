@@ -1,5 +1,2 @@
-H100 bench (TTT kernels)
-Command: python -m tests.bench --b 2 --h 4 --t 1024 --d 128 --dtype fp16 --iters 20
-math forward:   4.976 ms
-triton forward: 70.152 ms
-Notes: current Triton kernel is correctness-first and not yet optimized.
+math forward:   1.958 ms
+triton forward: 24.346 ms
