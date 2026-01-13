@@ -5,12 +5,17 @@ Kernel prototypes for TTT‑E2E meta‑learning (grad‑grad safe attention).
 ## What’s here
 
 - `ttt_kernels/triton_attention.py`
-  - **Custom Triton forward kernel** for attention
-  - **Grad‑grad safe backward** (PyTorch recompute)
-  - Optional demo Triton backward for `dv` only (still grad‑grad safe because `dq/dk` recompute)
+  - Custom Triton forward kernel
+  - Grad‑grad safe backward (PyTorch recompute)
+  - Backward/double‑backward stubs in `ttt_kernels/backward_stubs.py`
 
-This is a **kernel‑nerd demo**: a real Triton forward kernel with meta‑learning compatibility.
-It’s the starting point for full forward/backward/double‑backward kernels.
+- `docs/gradgrad_attention_design.md`
+  - Kernel design notes + pseudocode
+
+- `docs/kernel_diagram.txt`
+  - ASCII diagram of forward/backward/double‑backward stack
+
+This repo is the **kernel‑nerd demo**: real Triton kernel + explicit grad‑grad plan.
 
 ## Run on H100
 
@@ -33,9 +38,9 @@ python -m tests.test_gradgrad
 
 ## Notes
 
-- Full speed + grad‑grad requires **custom backward** and **double‑backward** kernels.
-- This repo proves the forward‑kernel work and keeps meta‑gradients correct.
-- Designed to integrate into TTT‑E2E training loops (swap attention backend).
+- Full speed + grad‑grad requires custom backward **and** double‑backward kernels.
+- Current default is recompute‑backward for correctness.
+- Set `bwd_mode='custom'` to route to stubbed kernels when implemented.
 
 ## Next targets
 

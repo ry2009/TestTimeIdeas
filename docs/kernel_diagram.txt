@@ -1,0 +1,29 @@
+Grad-Grad Attention Kernel Stack
+
+         +------------------------------+
+         |        Forward Kernel        |
+         |  Triton/CUDA (fast)          |
+         +--------------+---------------+
+                        |
+                        v
+                 O = Attn(Q,K,V)
+                        |
+                        v
+         +------------------------------+
+         |        Backward Path         |
+         |  (A) Recompute w/ PyTorch    |
+         |  (B) Triton Backward Kernel  |
+         +--------------+---------------+
+                        |
+                        v
+        dQ, dK, dV (grad-grad safe graph)
+                        |
+                        v
+         +------------------------------+
+         |     Double-Backward Kernels  |
+         |  Needed for full speed meta  |
+         +------------------------------+
+
+Fallback rule:
+- If custom bwd/double-bwd unavailable, use PyTorch recompute.
+- Always preserve create_graph=True semantics.
