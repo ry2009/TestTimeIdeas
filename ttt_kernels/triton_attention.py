@@ -25,6 +25,14 @@ def _attention_math(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, causal: b
     return torch.matmul(attn, v)
 
 
+def _attention_sdp(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, causal: bool, scale: float) -> torch.Tensor:
+    # Force math backend for grad-grad safety
+    with torch.backends.cuda.sdp_kernel(enable_flash=False, enable_mem_efficient=False, enable_math=True):
+        return torch.nn.functional.scaled_dot_product_attention(
+            q, k, v, attn_mask=None, dropout_p=0.0, is_causal=causal, scale=scale
+        )
+
+
 def _attention_with_probs(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, causal: bool, scale: float):
     scores = torch.matmul(q, k.transpose(-2, -1)) * scale
     if causal:
@@ -173,6 +181,18 @@ class TritonAttentionFn(torch.autograd.Function):
             dk = torch.matmul(ds.transpose(-2, -1), q) * scale
             return dq, dk, dv, None, None, None
 
+        if ctx.bwd_mode == 'recompute_sdp':
+            with torch.enable_grad():
+                out = _attention_sdp(q, k, v, causal, scale)
+                dq, dk, dv = torch.autograd.grad(out, (q, k, v), grad_out, create_graph=torch.is_grad_enabled())
+            return dq, dk, dv, None, None, None
+
+        if ctx.bwd_mode == 'recompute_compiled':
+            # Torch compile the recompute path (cached by causal flag)
+            compiled = _get_compiled_recompute(causal)
+            dq, dk, dv = compiled(q, k, v, grad_out, scale)
+            return dq, dk, dv, None, None, None
+
         if ctx.bwd_mode == 'dv_only':
             dv = backward_stubs.triton_attn_bwd_dv(q, k, v, grad_out, causal=causal, scale=scale)
             with torch.enable_grad():
@@ -189,3 +209,24 @@ class TritonAttentionFn(torch.autograd.Function):
 
 def triton_attention(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, *, causal: bool = False, scale: Optional[float] = None, bwd_mode: str = 'recompute') -> torch.Tensor:
     return TritonAttentionFn.apply(q, k, v, causal, scale, bwd_mode)
+
+
+_compiled_recompute = {}
+
+
+def _get_compiled_recompute(causal: bool):
+    key = "causal" if causal else "noncausal"
+    if key in _compiled_recompute:
+        return _compiled_recompute[key]
+
+    def _recompute(q, k, v, grad_out, scale):
+        out = _attention_math(q, k, v, causal, scale)
+        dq, dk, dv = torch.autograd.grad(out, (q, k, v), grad_out, create_graph=torch.is_grad_enabled())
+        return dq, dk, dv
+
+    try:
+        compiled = torch.compile(_recompute)
+    except Exception:
+        compiled = _recompute
+    _compiled_recompute[key] = compiled
+    return compiled

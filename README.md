@@ -36,6 +36,8 @@ Latest Modal H100 run (saved in `artifacts/modal_bench_h100.txt`):
 - **grad‑grad (recompute)**: still slower than math
 - **grad‑grad (save_p)**: faster than math (win, memory tradeoff)
 
+Most recent sweep is also saved in `artifacts/modal_bench_h100_latest.txt`.
+
 ## Grad‑grad check
 
 ```bash

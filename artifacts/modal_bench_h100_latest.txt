@@ -1,0 +1,24 @@
+Modal H100 run (forward + grad‑grad, recompute + save_p + sdp)
+
+Forward (b=2,h=4,t=2048,d=128,fp16):
+  math   0.213 ms
+  triton 0.242 ms  (loss)
+
+Grad‑grad (recompute, fp16):
+  t=128,d=64  math 1.473 ms | triton 2.025 ms (loss)
+  t=512,d=128 math 1.455 ms | triton 1.947 ms (loss)
+  t=1024,d=128 math 1.624 ms | triton 1.866 ms (loss)
+
+Grad‑grad (recompute_sdp, fp16):
+  t=128,d=64  math 1.422 ms | triton 2.225 ms (loss)
+  t=512,d=128 math 1.538 ms | triton 2.159 ms (loss)
+  t=1024,d=128 math 1.599 ms | triton 2.184 ms (loss)
+
+Grad‑grad (save_p, fp16):
+  t=128,d=64  math 1.385 ms | triton 1.281 ms (win)
+  t=512,d=128 math 1.523 ms | triton 1.430 ms (win)
+  t=1024,d=128 math 1.464 ms | triton 1.268 ms (win)
+
+Notes:
+- recompute_compiled failed: torch.compile does not support double backward.
+- save_p trades memory for speed; recompute remains slower.
