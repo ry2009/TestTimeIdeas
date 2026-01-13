@@ -51,7 +51,7 @@ def main():
     parser.add_argument('--iters', type=int, default=20)
     parser.add_argument('--warmup', type=int, default=5)
     parser.add_argument('--bwd_mode', type=str, default='recompute',
-                        choices=['recompute', 'recompute_manual', 'recompute_sdp', 'recompute_sdp_mem', 'recompute_sdp_auto', 'save_p', 'save_p_triton', 'save_p_triton_bwd', 'recompute_compiled', 'dv_only', 'custom'])
+                        choices=['recompute', 'recompute_manual', 'recompute_sdp', 'recompute_sdp_mem', 'recompute_sdp_auto', 'save_p', 'save_p_triton', 'save_p_triton_bwd', 'save_p_triton_full', 'recompute_compiled', 'dv_only', 'custom'])
     args = parser.parse_args()
 
     if args.device == 'auto':
@@ -82,6 +82,8 @@ def main():
         out = triton_attention(q, k, v, causal=args.causal, bwd_mode=args.bwd_mode)
         loss = out.float().mean()
         grads = torch.autograd.grad(loss, (q, k, v), create_graph=True)
+        if not all(g.requires_grad for g in grads):
+            return
         s = sum([g.pow(2).mean() for g in grads])
         torch.autograd.grad(s, (q, k, v))
 

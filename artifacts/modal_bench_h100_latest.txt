@@ -1,66 +1,78 @@
-Modal H100 run: https://modal.com/apps/ryanmathieu123/main/ap-kimWWprZ51Ui399hQeFtik
+Modal H100 run: https://modal.com/apps/ryanmathieu123/main/ap-qjZqyRaPWKqW2VOesLeAts
 
-math forward:   0.213 ms
-triton forward: 0.133 ms
+math forward:   0.212 ms
+triton forward: 0.134 ms
 
 # t=128 d=64
-recompute
-  gradgrad math:   1.217 ms
-  gradgrad triton: 1.736 ms
-recompute_manual
-  gradgrad math:   1.153 ms
-  gradgrad triton: 1.630 ms
-recompute_sdp (math backend)
-  gradgrad math:   1.199 ms
-  gradgrad triton: 1.811 ms
-save_p (cached softmax)
-  gradgrad math:   1.305 ms
-  gradgrad triton: 1.167 ms
-save_p_triton_bwd (Triton dV)
-  gradgrad math:   1.160 ms
-  gradgrad triton: 1.247 ms
+recompute (grad‑grad safe)
+  gradgrad math:   1.185 ms
+  gradgrad triton: 1.790 ms
+recompute_manual (grad‑grad safe)
+  gradgrad math:   1.179 ms
+  gradgrad triton: 1.668 ms
+recompute_sdp (grad‑grad safe)
+  gradgrad math:   1.189 ms
+  gradgrad triton: 1.790 ms
+save_p (first‑order only; cached softmax)
+  math:   1.251 ms
+  triton: 0.523 ms
+save_p_triton_bwd (first‑order only; Triton dV)
+  math:   1.169 ms
+  triton: 0.709 ms
+save_p_triton_full (first‑order only; Triton dP/dQ/dK)
+  math:   1.173 ms
+  triton: 0.959 ms
 
 # t=512 d=128
-recompute
-  gradgrad math:   1.288 ms
-  gradgrad triton: 1.815 ms
-recompute_manual
-  gradgrad math:   1.273 ms
-  gradgrad triton: 1.711 ms
-recompute_sdp (math backend)
-  gradgrad math:   1.263 ms
-  gradgrad triton: 1.908 ms
-save_p (cached softmax)
-  gradgrad math:   1.239 ms
-  gradgrad triton: 1.183 ms
-save_p_triton_bwd (Triton dV)
-  gradgrad math:   1.225 ms
-  gradgrad triton: 1.391 ms
+recompute (grad‑grad safe)
+  gradgrad math:   1.289 ms
+  gradgrad triton: 1.798 ms
+recompute_manual (grad‑grad safe)
+  gradgrad math:   1.311 ms
+  gradgrad triton: 1.715 ms
+recompute_sdp (grad‑grad safe)
+  gradgrad math:   1.261 ms
+  gradgrad triton: 1.916 ms
+save_p (first‑order only)
+  math:   1.281 ms
+  triton: 0.545 ms
+save_p_triton_bwd (first‑order only)
+  math:   1.228 ms
+  triton: 0.738 ms
+save_p_triton_full (first‑order only)
+  math:   1.289 ms
+  triton: 0.983 ms
 
 # t=1024 d=128
-recompute
-  gradgrad math:   1.242 ms
-  gradgrad triton: 1.798 ms
-recompute_manual
-  gradgrad math:   1.239 ms
-  gradgrad triton: 1.584 ms
-recompute_sdp (math backend)
-  gradgrad math:   1.278 ms
-  gradgrad triton: 1.822 ms
-save_p (cached softmax)
-  gradgrad math:   1.219 ms
-  gradgrad triton: 1.132 ms
-save_p_triton_bwd (Triton dV)
-  gradgrad math:   1.234 ms
-  gradgrad triton: 1.325 ms
+recompute (grad‑grad safe)
+  gradgrad math:   1.185 ms
+  gradgrad triton: 1.751 ms
+recompute_manual (grad‑grad safe)
+  gradgrad math:   1.236 ms
+  gradgrad triton: 1.625 ms
+recompute_sdp (grad‑grad safe)
+  gradgrad math:   1.273 ms
+  gradgrad triton: 1.848 ms
+save_p (first‑order only)
+  math:   1.252 ms
+  triton: 0.503 ms
+save_p_triton_bwd (first‑order only)
+  math:   1.335 ms
+  triton: 0.717 ms
+save_p_triton_full (first‑order only)
+  math:   1.304 ms
+  triton: 0.964 ms
 
 # t=8192 d=64 (b=1,h=1)
-recompute
-  gradgrad math:   4.041 ms
-  gradgrad triton: 4.882 ms
-save_p (cached softmax)
-  gradgrad math:   4.055 ms
-  gradgrad triton: 3.421 ms
-save_p_triton_bwd (Triton dV)
-  gradgrad math:   4.065 ms
-  gradgrad triton: 3.503 ms
+recompute (grad‑grad safe)
+  gradgrad math:   4.054 ms
+  gradgrad triton: 4.905 ms
+save_p (first‑order only)
+  math:   4.051 ms
+  triton: 1.112 ms
+save_p_triton_bwd (first‑order only)
+  math:   4.060 ms
+  triton: 1.187 ms
+save_p_triton_full (first‑order only)
+  math:   4.091 ms
+  triton: 1.568 ms

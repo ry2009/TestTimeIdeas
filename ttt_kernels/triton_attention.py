@@ -267,7 +267,7 @@ class TritonAttentionFn(torch.autograd.Function):
         ctx.save_for_backward(q, k, v)
         ctx.saved_probs = ()
 
-        if bwd_mode in ('save_p', 'save_p_triton_bwd'):
+        if bwd_mode in ('save_p', 'save_p_triton_bwd', 'save_p_triton_full'):
             out, p = _attention_with_probs(q, k, v, causal, scale)
             ctx.saved_probs = (p,)
             return out
@@ -348,21 +348,26 @@ class TritonAttentionFn(torch.autograd.Function):
             dv = backward_stubs.triton_attn_bwd_dv(q, k, v, grad_out, causal=causal, scale=scale)
             return dq, dk, dv, None, None, None
 
-        if ctx.bwd_mode in ('save_p', 'save_p_triton', 'save_p_triton_bwd'):
+        if ctx.bwd_mode in ('save_p', 'save_p_triton', 'save_p_triton_bwd', 'save_p_triton_full'):
             # Use saved softmax probabilities to avoid recompute
             (p,) = ctx.saved_probs
-            if ctx.bwd_mode == 'save_p_triton_bwd':
+            if ctx.bwd_mode == 'save_p_triton_full':
                 dv = backward_stubs.triton_attn_bwd_dv_from_p(p, grad_out)
+                rowsum = backward_stubs.triton_attn_rowsum_from_p(p, grad_out, v, causal=causal)
+                dq, dk = backward_stubs.triton_attn_bwd_dqdk_from_p(q, k, v, grad_out, p, rowsum, causal=causal, scale=scale)
             else:
-                # dV = P^T @ dO
-                dv = torch.matmul(p.transpose(-2, -1), grad_out)
-            # dP = dO @ V^T
-            dp = torch.matmul(grad_out, v.transpose(-2, -1))
-            # dS = (dP - sum(dP * P)) * P
-            ds = (dp - (dp * p).sum(dim=-1, keepdim=True)) * p
-            # dQ = dS @ K * scale, dK = dS^T @ Q * scale
-            dq = torch.matmul(ds, k) * scale
-            dk = torch.matmul(ds.transpose(-2, -1), q) * scale
+                if ctx.bwd_mode == 'save_p_triton_bwd':
+                    dv = backward_stubs.triton_attn_bwd_dv_from_p(p, grad_out)
+                else:
+                    # dV = P^T @ dO
+                    dv = torch.matmul(p.transpose(-2, -1), grad_out)
+                # dP = dO @ V^T
+                dp = torch.matmul(grad_out, v.transpose(-2, -1))
+                # dS = (dP - sum(dP * P)) * P
+                ds = (dp - (dp * p).sum(dim=-1, keepdim=True)) * p
+                # dQ = dS @ K * scale, dK = dS^T @ Q * scale
+                dq = torch.matmul(ds, k) * scale
+                dk = torch.matmul(ds.transpose(-2, -1), q) * scale
             return dq, dk, dv, None, None, None
 
         if ctx.bwd_mode == 'recompute_manual':
