@@ -25,6 +25,14 @@ def _attention_math(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, causal: b
     return torch.matmul(attn, v)
 
 
+@triton.autotune(
+    configs=[
+        triton.Config({'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_D': 64}, num_warps=4, num_stages=2),
+        triton.Config({'BLOCK_M': 128, 'BLOCK_N': 128, 'BLOCK_D': 64}, num_warps=8, num_stages=3),
+        triton.Config({'BLOCK_M': 128, 'BLOCK_N': 64, 'BLOCK_D': 64}, num_warps=8, num_stages=3),
+    ],
+    key=['n_ctx', 'd_head'],
+)
 @triton.jit
 def _attn_fwd_kernel(
     q_ptr, k_ptr, v_ptr, o_ptr,
@@ -107,10 +115,7 @@ class TritonAttentionFn(torch.autograd.Function):
         stride_vb, stride_vn, stride_vk = vh.stride()
         stride_ob, stride_om, stride_ok = out.stride()
 
-        BLOCK_M = 64
-        BLOCK_N = 64
-        BLOCK_D = 64 if d <= 64 else 128
-        grid = (triton.cdiv(t, BLOCK_M), b * h)
+        grid = lambda META: (triton.cdiv(t, META['BLOCK_M']), b * h)
 
         _attn_fwd_kernel[grid](
             qh, kh, vh, out,
@@ -121,11 +126,6 @@ class TritonAttentionFn(torch.autograd.Function):
             t, d,
             scale,
             causal=causal,
-            BLOCK_M=BLOCK_M,
-            BLOCK_N=BLOCK_N,
-            BLOCK_D=BLOCK_D,
-            num_warps=4,
-            num_stages=2,
         )
         return out.reshape(b, h, t, d)
 
