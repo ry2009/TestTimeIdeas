@@ -1,46 +1,55 @@
-Modal H100 run: https://modal.com/apps/ryanmathieu123/main/ap-pu6A5JGTB43Tb7rLHPa9zO
+Modal H100 run: https://modal.com/apps/ryanmathieu123/main/ap-k1yrOge1Ij104QJtk1cr0N
 
-math forward:   0.214 ms
-triton forward: 0.121 ms
+math forward:   0.212 ms
+triton forward: 0.138 ms
 
 # t=128 d=64
 recompute
-  gradgrad math:   1.005 ms
-  gradgrad triton: 1.452 ms
+  gradgrad math:   1.199 ms
+  gradgrad triton: 1.640 ms
 recompute_manual
-  gradgrad math:   1.009 ms
-  gradgrad triton: 1.240 ms
+  gradgrad math:   1.135 ms
+  gradgrad triton: 1.621 ms
 recompute_sdp (math backend)
-  gradgrad math:   1.008 ms
-  gradgrad triton: 1.406 ms
+  gradgrad math:   1.338 ms
+  gradgrad triton: 1.911 ms
 save_p (cached softmax)
-  gradgrad math:   0.992 ms
-  gradgrad triton: 0.852 ms
+  gradgrad math:   1.255 ms
+  gradgrad triton: 1.164 ms
+save_p_triton (forward+P in Triton)
+  gradgrad math:   1.166 ms
+  gradgrad triton: 1.479 ms  # slower than save_p
 
 # t=512 d=128
 recompute
-  gradgrad math:   1.085 ms
-  gradgrad triton: 1.439 ms
+  gradgrad math:   1.256 ms
+  gradgrad triton: 1.828 ms
 recompute_manual
-  gradgrad math:   0.962 ms
-  gradgrad triton: 1.426 ms
+  gradgrad math:   1.355 ms
+  gradgrad triton: 1.775 ms
 recompute_sdp (math backend)
-  gradgrad math:   0.960 ms
-  gradgrad triton: 1.531 ms
+  gradgrad math:   1.247 ms
+  gradgrad triton: 1.876 ms
 save_p (cached softmax)
-  gradgrad math:   0.991 ms
-  gradgrad triton: 0.918 ms
+  gradgrad math:   1.201 ms
+  gradgrad triton: 1.141 ms
+save_p_triton (forward+P in Triton)
+  gradgrad math:   1.257 ms
+  gradgrad triton: 1.546 ms  # slower than save_p
 
 # t=1024 d=128
 recompute
-  gradgrad math:   1.018 ms
-  gradgrad triton: 1.438 ms
+  gradgrad math:   1.213 ms
+  gradgrad triton: 1.725 ms
 recompute_manual
-  gradgrad math:   0.987 ms
-  gradgrad triton: 1.325 ms
+  gradgrad math:   1.205 ms
+  gradgrad triton: 1.659 ms
 recompute_sdp (math backend)
-  gradgrad math:   1.011 ms
-  gradgrad triton: 1.444 ms
+  gradgrad math:   1.233 ms
+  gradgrad triton: 1.793 ms
 save_p (cached softmax)
-  gradgrad math:   0.990 ms
-  gradgrad triton: 0.870 ms
+  gradgrad math:   1.249 ms
+  gradgrad triton: 1.111 ms
+save_p_triton (forward+P in Triton)
+  gradgrad math:   1.219 ms
+  gradgrad triton: 1.485 ms  # slower than save_p

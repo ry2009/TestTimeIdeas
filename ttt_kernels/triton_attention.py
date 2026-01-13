@@ -137,6 +137,125 @@ if _TRITON_AVAILABLE:
         o_ptrs = o_ptr + pid_bh * stride_ob + offs_m[:, None] * stride_om + offs_d[None, :] * stride_ok
         tl.store(o_ptrs, out, mask=(offs_m[:, None] < n_ctx) & (offs_d[None, :] < d_head))
 
+    @triton.autotune(
+        configs=[
+            triton.Config({'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_D': 64}, num_warps=4, num_stages=2),
+            triton.Config({'BLOCK_M': 128, 'BLOCK_N': 128, 'BLOCK_D': 64}, num_warps=8, num_stages=3),
+            triton.Config({'BLOCK_M': 128, 'BLOCK_N': 64, 'BLOCK_D': 64}, num_warps=8, num_stages=3),
+        ],
+        key=['n_ctx', 'd_head'],
+    )
+    @triton.jit
+    def _attn_fwd_kernel_stats(
+        q_ptr, k_ptr, v_ptr, o_ptr, m_ptr, l_ptr,
+        stride_qb, stride_qm, stride_qk,
+        stride_kb, stride_kn, stride_kk,
+        stride_vb, stride_vn, stride_vk,
+        stride_ob, stride_om, stride_ok,
+        stride_mb, stride_mm,
+        stride_lb, stride_lm,
+        n_ctx, d_head,
+        scale,
+        causal: tl.constexpr,
+        BLOCK_M: tl.constexpr,
+        BLOCK_N: tl.constexpr,
+        BLOCK_D: tl.constexpr,
+    ):
+        pid_m = tl.program_id(0)
+        pid_bh = tl.program_id(1)
+
+        offs_m = pid_m * BLOCK_M + tl.arange(0, BLOCK_M)
+        offs_d = tl.arange(0, BLOCK_D)
+
+        q_ptrs = q_ptr + pid_bh * stride_qb + offs_m[:, None] * stride_qm + offs_d[None, :] * stride_qk
+        q = tl.load(q_ptrs, mask=(offs_m[:, None] < n_ctx) & (offs_d[None, :] < d_head), other=0.0)
+
+        m_i = tl.full((BLOCK_M,), -float('inf'), tl.float32)
+        l_i = tl.zeros((BLOCK_M,), tl.float32)
+        acc = tl.zeros((BLOCK_M, BLOCK_D), tl.float32)
+
+        for start_n in range(0, n_ctx, BLOCK_N):
+            offs_n = start_n + tl.arange(0, BLOCK_N)
+
+            k_ptrs = k_ptr + pid_bh * stride_kb + offs_n[None, :] * stride_kn + offs_d[:, None] * stride_kk
+            k = tl.load(k_ptrs, mask=(offs_n[None, :] < n_ctx) & (offs_d[:, None] < d_head), other=0.0)
+
+            qk = tl.dot(q, k) * scale
+            qk = qk.to(tl.float32)
+
+            if causal:
+                mask = offs_m[:, None] < offs_n[None, :]
+                qk = tl.where(mask, -float('inf'), qk)
+
+            m_i_new = tl.maximum(m_i, tl.max(qk, axis=1))
+            exp_qk = tl.exp(qk - m_i_new[:, None])
+            l_i = l_i * tl.exp(m_i - m_i_new) + tl.sum(exp_qk, axis=1)
+
+            v_ptrs = v_ptr + pid_bh * stride_vb + offs_n[:, None] * stride_vn + offs_d[None, :] * stride_vk
+            v = tl.load(v_ptrs, mask=(offs_n[:, None] < n_ctx) & (offs_d[None, :] < d_head), other=0.0)
+            exp_qk_f16 = exp_qk.to(tl.float16)
+            acc = acc * tl.exp(m_i - m_i_new)[:, None] + tl.dot(exp_qk_f16, v)
+            m_i = m_i_new
+
+        out = acc / l_i[:, None]
+        o_ptrs = o_ptr + pid_bh * stride_ob + offs_m[:, None] * stride_om + offs_d[None, :] * stride_ok
+        tl.store(o_ptrs, out, mask=(offs_m[:, None] < n_ctx) & (offs_d[None, :] < d_head))
+
+        m_ptrs = m_ptr + pid_bh * stride_mb + offs_m * stride_mm
+        l_ptrs = l_ptr + pid_bh * stride_lb + offs_m * stride_lm
+        tl.store(m_ptrs, m_i, mask=(offs_m < n_ctx))
+        tl.store(l_ptrs, l_i, mask=(offs_m < n_ctx))
+
+    @triton.autotune(
+        configs=[
+            triton.Config({'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_D': 64}, num_warps=4, num_stages=2),
+            triton.Config({'BLOCK_M': 128, 'BLOCK_N': 128, 'BLOCK_D': 64}, num_warps=8, num_stages=3),
+            triton.Config({'BLOCK_M': 128, 'BLOCK_N': 64, 'BLOCK_D': 64}, num_warps=8, num_stages=3),
+        ],
+        key=['n_ctx', 'd_head'],
+    )
+    @triton.jit
+    def _attn_probs_kernel(
+        q_ptr, k_ptr, p_ptr, m_ptr, l_ptr,
+        stride_qb, stride_qm, stride_qk,
+        stride_kb, stride_kn, stride_kk,
+        stride_pb, stride_pm, stride_pn,
+        stride_mb, stride_mm,
+        stride_lb, stride_lm,
+        n_ctx, d_head,
+        scale,
+        causal: tl.constexpr,
+        BLOCK_M: tl.constexpr,
+        BLOCK_N: tl.constexpr,
+        BLOCK_D: tl.constexpr,
+    ):
+        pid_m = tl.program_id(0)
+        pid_bh = tl.program_id(1)
+        offs_m = pid_m * BLOCK_M + tl.arange(0, BLOCK_M)
+        offs_d = tl.arange(0, BLOCK_D)
+
+        q_ptrs = q_ptr + pid_bh * stride_qb + offs_m[:, None] * stride_qm + offs_d[None, :] * stride_qk
+        q = tl.load(q_ptrs, mask=(offs_m[:, None] < n_ctx) & (offs_d[None, :] < d_head), other=0.0)
+
+        m_ptrs = m_ptr + pid_bh * stride_mb + offs_m * stride_mm
+        l_ptrs = l_ptr + pid_bh * stride_lb + offs_m * stride_lm
+        m_i = tl.load(m_ptrs, mask=(offs_m < n_ctx), other=0.0)
+        l_i = tl.load(l_ptrs, mask=(offs_m < n_ctx), other=1.0)
+
+        for start_n in range(0, n_ctx, BLOCK_N):
+            offs_n = start_n + tl.arange(0, BLOCK_N)
+            k_ptrs = k_ptr + pid_bh * stride_kb + offs_n[None, :] * stride_kn + offs_d[:, None] * stride_kk
+            k = tl.load(k_ptrs, mask=(offs_n[None, :] < n_ctx) & (offs_d[:, None] < d_head), other=0.0)
+
+            qk = tl.dot(q, k) * scale
+            qk = qk.to(tl.float32)
+            if causal:
+                mask = offs_m[:, None] < offs_n[None, :]
+                qk = tl.where(mask, -float('inf'), qk)
+            p = tl.exp(qk - m_i[:, None]) / l_i[:, None]
+            p_ptrs = p_ptr + pid_bh * stride_pb + offs_m[:, None] * stride_pm + offs_n[None, :] * stride_pn
+            tl.store(p_ptrs, p, mask=(offs_m[:, None] < n_ctx) & (offs_n[None, :] < n_ctx))
+
 
 class TritonAttentionFn(torch.autograd.Function):
     @staticmethod
@@ -173,6 +292,39 @@ class TritonAttentionFn(torch.autograd.Function):
 
         grid = lambda META: (triton.cdiv(t, META['BLOCK_M']), b * h)
 
+        if bwd_mode == 'save_p_triton':
+            m = torch.empty((b * h, t), device=qh.device, dtype=torch.float32)
+            l = torch.empty((b * h, t), device=qh.device, dtype=torch.float32)
+            stride_mb, stride_mm = m.stride()
+            stride_lb, stride_lm = l.stride()
+            _attn_fwd_kernel_stats[grid](
+                qh, kh, vh, out, m, l,
+                stride_qb, stride_qm, stride_qk,
+                stride_kb, stride_kn, stride_kk,
+                stride_vb, stride_vn, stride_vk,
+                stride_ob, stride_om, stride_ok,
+                stride_mb, stride_mm,
+                stride_lb, stride_lm,
+                t, d,
+                scale,
+                causal=causal,
+            )
+            p = torch.empty((b * h, t, t), device=qh.device, dtype=qh.dtype)
+            stride_pb, stride_pm, stride_pn = p.stride()
+            _attn_probs_kernel[grid](
+                qh, kh, p, m, l,
+                stride_qb, stride_qm, stride_qk,
+                stride_kb, stride_kn, stride_kk,
+                stride_pb, stride_pm, stride_pn,
+                stride_mb, stride_mm,
+                stride_lb, stride_lm,
+                t, d,
+                scale,
+                causal=causal,
+            )
+            ctx.saved_probs = (p.reshape(b, h, t, t),)
+            return out.reshape(b, h, t, d)
+
         _attn_fwd_kernel[grid](
             qh, kh, vh, out,
             stride_qb, stride_qm, stride_qk,
@@ -197,7 +349,7 @@ class TritonAttentionFn(torch.autograd.Function):
             dv = backward_stubs.triton_attn_bwd_dv(q, k, v, grad_out, causal=causal, scale=scale)
             return dq, dk, dv, None, None, None
 
-        if ctx.bwd_mode == 'save_p':
+        if ctx.bwd_mode in ('save_p', 'save_p_triton'):
             # Use saved softmax probabilities to avoid recompute
             (p,) = ctx.saved_probs
             # dV = P^T @ dO
