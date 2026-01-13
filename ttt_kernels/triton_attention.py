@@ -25,67 +25,68 @@ def _attention_math(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, causal: b
     return torch.matmul(attn, v)
 
 
-@triton.autotune(
-    configs=[
-        triton.Config({'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_D': 64}, num_warps=4, num_stages=2),
-        triton.Config({'BLOCK_M': 128, 'BLOCK_N': 128, 'BLOCK_D': 64}, num_warps=8, num_stages=3),
-        triton.Config({'BLOCK_M': 128, 'BLOCK_N': 64, 'BLOCK_D': 64}, num_warps=8, num_stages=3),
-    ],
-    key=['n_ctx', 'd_head'],
-)
-@triton.jit
-def _attn_fwd_kernel(
-    q_ptr, k_ptr, v_ptr, o_ptr,
-    stride_qb, stride_qm, stride_qk,
-    stride_kb, stride_kn, stride_kk,
-    stride_vb, stride_vn, stride_vk,
-    stride_ob, stride_om, stride_ok,
-    n_ctx, d_head,
-    scale,
-    causal: tl.constexpr,
-    BLOCK_M: tl.constexpr,
-    BLOCK_N: tl.constexpr,
-    BLOCK_D: tl.constexpr,
-):
-    pid_m = tl.program_id(0)
-    pid_bh = tl.program_id(1)
+if _TRITON_AVAILABLE:
+    @triton.autotune(
+        configs=[
+            triton.Config({'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_D': 64}, num_warps=4, num_stages=2),
+            triton.Config({'BLOCK_M': 128, 'BLOCK_N': 128, 'BLOCK_D': 64}, num_warps=8, num_stages=3),
+            triton.Config({'BLOCK_M': 128, 'BLOCK_N': 64, 'BLOCK_D': 64}, num_warps=8, num_stages=3),
+        ],
+        key=['n_ctx', 'd_head'],
+    )
+    @triton.jit
+    def _attn_fwd_kernel(
+        q_ptr, k_ptr, v_ptr, o_ptr,
+        stride_qb, stride_qm, stride_qk,
+        stride_kb, stride_kn, stride_kk,
+        stride_vb, stride_vn, stride_vk,
+        stride_ob, stride_om, stride_ok,
+        n_ctx, d_head,
+        scale,
+        causal: tl.constexpr,
+        BLOCK_M: tl.constexpr,
+        BLOCK_N: tl.constexpr,
+        BLOCK_D: tl.constexpr,
+    ):
+        pid_m = tl.program_id(0)
+        pid_bh = tl.program_id(1)
 
-    offs_m = pid_m * BLOCK_M + tl.arange(0, BLOCK_M)
-    offs_d = tl.arange(0, BLOCK_D)
+        offs_m = pid_m * BLOCK_M + tl.arange(0, BLOCK_M)
+        offs_d = tl.arange(0, BLOCK_D)
 
-    q_ptrs = q_ptr + pid_bh * stride_qb + offs_m[:, None] * stride_qm + offs_d[None, :] * stride_qk
-    q = tl.load(q_ptrs, mask=(offs_m[:, None] < n_ctx) & (offs_d[None, :] < d_head), other=0.0)
+        q_ptrs = q_ptr + pid_bh * stride_qb + offs_m[:, None] * stride_qm + offs_d[None, :] * stride_qk
+        q = tl.load(q_ptrs, mask=(offs_m[:, None] < n_ctx) & (offs_d[None, :] < d_head), other=0.0)
 
-    m_i = tl.full((BLOCK_M,), -float('inf'), tl.float32)
-    l_i = tl.zeros((BLOCK_M,), tl.float32)
-    acc = tl.zeros((BLOCK_M, BLOCK_D), tl.float32)
+        m_i = tl.full((BLOCK_M,), -float('inf'), tl.float32)
+        l_i = tl.zeros((BLOCK_M,), tl.float32)
+        acc = tl.zeros((BLOCK_M, BLOCK_D), tl.float32)
 
-    for start_n in range(0, n_ctx, BLOCK_N):
-        offs_n = start_n + tl.arange(0, BLOCK_N)
+        for start_n in range(0, n_ctx, BLOCK_N):
+            offs_n = start_n + tl.arange(0, BLOCK_N)
 
-        k_ptrs = k_ptr + pid_bh * stride_kb + offs_n[None, :] * stride_kn + offs_d[:, None] * stride_kk
-        k = tl.load(k_ptrs, mask=(offs_n[None, :] < n_ctx) & (offs_d[:, None] < d_head), other=0.0)
+            k_ptrs = k_ptr + pid_bh * stride_kb + offs_n[None, :] * stride_kn + offs_d[:, None] * stride_kk
+            k = tl.load(k_ptrs, mask=(offs_n[None, :] < n_ctx) & (offs_d[:, None] < d_head), other=0.0)
 
-        qk = tl.dot(q, k) * scale
-        qk = qk.to(tl.float32)
+            qk = tl.dot(q, k) * scale
+            qk = qk.to(tl.float32)
 
-        if causal:
-            mask = offs_m[:, None] < offs_n[None, :]
-            qk = tl.where(mask, -float('inf'), qk)
+            if causal:
+                mask = offs_m[:, None] < offs_n[None, :]
+                qk = tl.where(mask, -float('inf'), qk)
 
-        m_i_new = tl.maximum(m_i, tl.max(qk, axis=1))
-        exp_qk = tl.exp(qk - m_i_new[:, None])
-        l_i = l_i * tl.exp(m_i - m_i_new) + tl.sum(exp_qk, axis=1)
+            m_i_new = tl.maximum(m_i, tl.max(qk, axis=1))
+            exp_qk = tl.exp(qk - m_i_new[:, None])
+            l_i = l_i * tl.exp(m_i - m_i_new) + tl.sum(exp_qk, axis=1)
 
-        v_ptrs = v_ptr + pid_bh * stride_vb + offs_n[:, None] * stride_vn + offs_d[None, :] * stride_vk
-        v = tl.load(v_ptrs, mask=(offs_n[:, None] < n_ctx) & (offs_d[None, :] < d_head), other=0.0)
-        exp_qk_f16 = exp_qk.to(tl.float16)
-        acc = acc * tl.exp(m_i - m_i_new)[:, None] + tl.dot(exp_qk_f16, v)
-        m_i = m_i_new
+            v_ptrs = v_ptr + pid_bh * stride_vb + offs_n[:, None] * stride_vn + offs_d[None, :] * stride_vk
+            v = tl.load(v_ptrs, mask=(offs_n[:, None] < n_ctx) & (offs_d[None, :] < d_head), other=0.0)
+            exp_qk_f16 = exp_qk.to(tl.float16)
+            acc = acc * tl.exp(m_i - m_i_new)[:, None] + tl.dot(exp_qk_f16, v)
+            m_i = m_i_new
 
-    out = acc / l_i[:, None]
-    o_ptrs = o_ptr + pid_bh * stride_ob + offs_m[:, None] * stride_om + offs_d[None, :] * stride_ok
-    tl.store(o_ptrs, out, mask=(offs_m[:, None] < n_ctx) & (offs_d[None, :] < d_head))
+        out = acc / l_i[:, None]
+        o_ptrs = o_ptr + pid_bh * stride_ob + offs_m[:, None] * stride_om + offs_d[None, :] * stride_ok
+        tl.store(o_ptrs, out, mask=(offs_m[:, None] < n_ctx) & (offs_d[None, :] < d_head))
 
 
 class TritonAttentionFn(torch.autograd.Function):
