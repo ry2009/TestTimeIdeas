@@ -140,6 +140,13 @@ class TritonAttentionFn(torch.autograd.Function):
             dv = backward_stubs.triton_attn_bwd_dv(q, k, v, grad_out, causal=causal, scale=scale)
             return dq, dk, dv, None, None, None
 
+        if ctx.bwd_mode == 'dv_only':
+            dv = backward_stubs.triton_attn_bwd_dv(q, k, v, grad_out, causal=causal, scale=scale)
+            with torch.enable_grad():
+                out = _attention_math(q, k, v, causal, scale)
+                dq, dk, _ = torch.autograd.grad(out, (q, k, v), grad_out, create_graph=torch.is_grad_enabled())
+            return dq, dk, dv, None, None, None
+
         # Default: differentiable recompute for grad-grad safety
         with torch.enable_grad():
             out = _attention_math(q, k, v, causal, scale)

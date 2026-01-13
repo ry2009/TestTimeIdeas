@@ -11,7 +11,7 @@ Standard FA backward uses fused, non-differentiable optimizations. The backward 
    - (A) recompute with PyTorch ops (slow but grad-grad safe), or
    - (B) custom backward kernel + custom **double-backward** kernels (fast + grad-grad safe).
 
-We implement (A) now, scaffold (B).
+We implement (A) now, and a first **Triton dV kernel** as proof-of-work.
 
 ## Dataflow
 
@@ -78,22 +78,24 @@ We need:
 - Triton backward kernels for dQ, dK, dV
 - Triton double-backward kernels for d^2Q, d^2K, d^2V
 
-Minimal plan:
-1) Implement fast **dV** kernel first (low risk)
-2) Implement dQ/dK kernels
-3) Implement double-backward for each
-4) Gate with flags and fallback to recompute when needed
+**Current progress**:
+- Implemented a correctness-first Triton dV kernel (`bwd_mode='dv_only'`).
+- dQ/dK still recompute (grad-grad safe).
 
 ## Implementation scaffolding
 
 - `ttt_kernels/triton_attention.py` contains:
   - Triton forward kernel
   - Backward recompute (grad-grad safe)
-  - Optional demo Triton dV kernel
+  - Optional Triton dV path (`bwd_mode='dv_only'`)
+
+- `ttt_kernels/backward_stubs.py`:
+  - Triton dV kernel
+  - dq/dk + double-backward stubs
 
 ## Next steps checklist
 
-[ ] Triton dV validated vs PyTorch
+[ ] Validate dV vs PyTorch (parity tests)
 [ ] Triton dQ/dK kernels
 [ ] Double-backward for dV
 [ ] Double-backward for dQ/dK
