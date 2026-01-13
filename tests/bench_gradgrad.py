@@ -48,6 +48,8 @@ def main():
     parser.add_argument('--device', type=str, default='auto', choices=['auto', 'cpu', 'cuda'])
     parser.add_argument('--causal', action='store_true')
     parser.add_argument('--compile', action='store_true')
+    parser.add_argument('--bwd_mode', type=str, default='recompute',
+                        choices=['recompute', 'save_p', 'dv_only', 'custom'])
     args = parser.parse_args()
 
     if args.device == 'auto':
@@ -75,7 +77,7 @@ def main():
         torch.autograd.grad(s, (q, k, v))
 
     def _run_triton():
-        out = triton_attention(q, k, v, causal=args.causal)
+        out = triton_attention(q, k, v, causal=args.causal, bwd_mode=args.bwd_mode)
         loss = out.float().mean()
         grads = torch.autograd.grad(loss, (q, k, v), create_graph=True)
         s = sum([g.pow(2).mean() for g in grads])

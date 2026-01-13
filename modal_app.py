@@ -48,7 +48,13 @@ def run_bench():
     os.chdir("/root/TestTimeIdeas")
     out = []
     out.append(_run("python tests/bench.py --b 2 --h 4 --t 2048 --d 128 --dtype fp16 --iters 50"))
-    out.append(_run("python tests/bench_gradgrad.py --b 2 --h 2 --t 128 --d 64 --dtype fp16"))
+    # grad-grad sweeps (small -> larger)
+    out.append(_run("python tests/bench_gradgrad.py --b 2 --h 2 --t 128 --d 64 --dtype fp16 --bwd_mode recompute"))
+    out.append(_run("python tests/bench_gradgrad.py --b 2 --h 2 --t 128 --d 64 --dtype fp16 --bwd_mode save_p"))
+    out.append(_run("python tests/bench_gradgrad.py --b 1 --h 4 --t 512 --d 128 --dtype fp16 --bwd_mode recompute"))
+    out.append(_run("python tests/bench_gradgrad.py --b 1 --h 4 --t 512 --d 128 --dtype fp16 --bwd_mode save_p"))
+    out.append(_run("python tests/bench_gradgrad.py --b 1 --h 4 --t 1024 --d 128 --dtype fp16 --bwd_mode recompute"))
+    out.append(_run("python tests/bench_gradgrad.py --b 1 --h 4 --t 1024 --d 128 --dtype fp16 --bwd_mode save_p"))
     return "\n".join(out)
 
 

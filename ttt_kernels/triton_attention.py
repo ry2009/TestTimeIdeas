@@ -25,6 +25,17 @@ def _attention_math(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, causal: b
     return torch.matmul(attn, v)
 
 
+def _attention_with_probs(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, causal: bool, scale: float):
+    scores = torch.matmul(q, k.transpose(-2, -1)) * scale
+    if causal:
+        t = scores.size(-1)
+        mask = torch.triu(torch.ones((t, t), device=scores.device, dtype=torch.bool), diagonal=1)
+        scores = scores.masked_fill(mask, float('-inf'))
+    attn = torch.softmax(scores, dim=-1)
+    out = torch.matmul(attn, v)
+    return out, attn
+
+
 if _TRITON_AVAILABLE:
     @triton.autotune(
         configs=[
@@ -98,6 +109,12 @@ class TritonAttentionFn(torch.autograd.Function):
         ctx.scale = scale
         ctx.bwd_mode = bwd_mode
         ctx.save_for_backward(q, k, v)
+        ctx.saved_probs = ()
+
+        if bwd_mode == 'save_p':
+            out, p = _attention_with_probs(q, k, v, causal, scale)
+            ctx.saved_probs = (p,)
+            return out
 
         if not _TRITON_AVAILABLE:
             return _attention_math(q, k, v, causal, scale)
@@ -140,6 +157,20 @@ class TritonAttentionFn(torch.autograd.Function):
             dq = backward_stubs.triton_attn_bwd_dq(q, k, v, grad_out, causal=causal, scale=scale)
             dk = backward_stubs.triton_attn_bwd_dk(q, k, v, grad_out, causal=causal, scale=scale)
             dv = backward_stubs.triton_attn_bwd_dv(q, k, v, grad_out, causal=causal, scale=scale)
+            return dq, dk, dv, None, None, None
+
+        if ctx.bwd_mode == 'save_p':
+            # Use saved softmax probabilities to avoid recompute
+            (p,) = ctx.saved_probs
+            # dV = P^T @ dO
+            dv = torch.matmul(p.transpose(-2, -1), grad_out)
+            # dP = dO @ V^T
+            dp = torch.matmul(grad_out, v.transpose(-2, -1))
+            # dS = (dP - sum(dP * P)) * P
+            ds = (dp - (dp * p).sum(dim=-1, keepdim=True)) * p
+            # dQ = dS @ K * scale, dK = dS^T @ Q * scale
+            dq = torch.matmul(ds, k) * scale
+            dk = torch.matmul(ds.transpose(-2, -1), q) * scale
             return dq, dk, dv, None, None, None
 
         if ctx.bwd_mode == 'dv_only':

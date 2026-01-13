@@ -33,7 +33,8 @@ triton forward: Y.YYY ms
 
 Latest Modal H100 run (saved in `artifacts/modal_bench_h100.txt`):
 - **forward**: triton 0.137 ms vs math 0.212 ms (win)
-- **grad‑grad**: triton 1.600 ms vs math 1.150 ms (still slower)
+- **grad‑grad (recompute)**: still slower than math
+- **grad‑grad (save_p)**: faster than math (win, memory tradeoff)
 
 ## Grad‑grad check
 

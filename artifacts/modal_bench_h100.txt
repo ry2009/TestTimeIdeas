@@ -1,6 +1,19 @@
-Modal H100 run (forward + grad-grad)
-math forward:   0.212 ms
-triton forward: 0.137 ms
+Modal H100 run (forward + grad‑grad)
 
-gradgrad math:   1.150 ms
-gradgrad triton: 1.600 ms
+Forward (b=2,h=4,t=2048,d=128,fp16):
+  math   0.213 ms
+  triton 0.136 ms  (win)
+
+Grad‑grad (recompute, fp16):
+  t=128,d=64  math 1.141 ms | triton 1.793 ms (loss)
+  t=512,d=128 math 1.316 ms | triton 2.001 ms (loss)
+  t=1024,d=128 math 1.259 ms | triton 1.783 ms (loss)
+
+Grad‑grad (save_p, fp16, cached softmax):
+  t=128,d=64  math 1.317 ms | triton 1.113 ms (win)
+  t=512,d=128 math 1.254 ms | triton 1.112 ms (win)
+  t=1024,d=128 math 1.356 ms | triton 1.209 ms (win)
+
+Notes:
+- save_p trades memory (stores attention probs) for speed.
+- recompute mode matches the meta‑learning reference but is slower.
