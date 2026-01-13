@@ -48,6 +48,8 @@ def main():
     parser.add_argument('--device', type=str, default='auto', choices=['auto', 'cpu', 'cuda'])
     parser.add_argument('--causal', action='store_true')
     parser.add_argument('--compile', action='store_true')
+    parser.add_argument('--iters', type=int, default=20)
+    parser.add_argument('--warmup', type=int, default=5)
     parser.add_argument('--bwd_mode', type=str, default='recompute',
                         choices=['recompute', 'recompute_manual', 'recompute_sdp', 'recompute_sdp_mem', 'recompute_sdp_auto', 'save_p', 'save_p_triton', 'recompute_compiled', 'dv_only', 'custom'])
     args = parser.parse_args()
@@ -86,11 +88,11 @@ def main():
     if args.compile:
         _run_math = torch.compile(_run_math)
 
-    t_math = _timeit(_run_math)
+    t_math = _timeit(_run_math, iters=args.iters, warmup=args.warmup)
     print(f'gradgrad math:   {t_math:.3f} ms')
 
     if device.type == 'cuda':
-        t_triton = _timeit(_run_triton)
+        t_triton = _timeit(_run_triton, iters=args.iters, warmup=args.warmup)
         print(f'gradgrad triton: {t_triton:.3f} ms')
     else:
         print('gradgrad triton: skipped (CUDA required)')

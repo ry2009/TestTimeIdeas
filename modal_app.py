@@ -61,6 +61,9 @@ def run_bench():
     out.append(_run("python tests/bench_gradgrad.py --b 1 --h 4 --t 1024 --d 128 --dtype fp16 --bwd_mode recompute_manual"))
     out.append(_run("python tests/bench_gradgrad.py --b 1 --h 4 --t 1024 --d 128 --dtype fp16 --bwd_mode recompute_sdp"))
     out.append(_run("python tests/bench_gradgrad.py --b 1 --h 4 --t 1024 --d 128 --dtype fp16 --bwd_mode save_p"))
+    # long-context sanity (reduce iters to keep runtime reasonable)
+    out.append(_run("python tests/bench_gradgrad.py --b 1 --h 1 --t 8192 --d 64 --dtype fp16 --iters 5 --warmup 2 --bwd_mode recompute"))
+    out.append(_run("python tests/bench_gradgrad.py --b 1 --h 1 --t 8192 --d 64 --dtype fp16 --iters 5 --warmup 2 --bwd_mode save_p"))
     return "\n".join(out)
 
 
