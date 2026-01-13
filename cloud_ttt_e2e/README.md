@@ -9,6 +9,17 @@ This repo is a minimal, research-focused prototype of **TTT‑E2E** with:
 
 It is designed to be a clean, hackable base for a blog‑quality reproduction and system‑level demo.
 
+## Latest run snapshot (H100)
+
+Artifacts captured from the last meta‑learning demo run (stopped at step ~4100/5000):
+
+- Logs: `meta_8k_v2.log`
+- Plots:
+  - `artifacts/meta_loss_curves.png` (+ CSV)
+  - `artifacts/meta_eval_acc.png` (+ CSV)
+- Kernel bench note: `artifacts/kernel_bench_h100.txt`
+- Notes: `blog/findings.md` (short summary + takeaways)
+
 ## Quickstart
 
 ```bash
