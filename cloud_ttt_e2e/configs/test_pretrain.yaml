@@ -1,0 +1,16 @@
+vocab_size: 1024
+max_seq_len: 512
+context_len: 384
+query_len: 128
+window_size: 128
+d_model: 128
+n_heads: 4
+n_layers: 4
+d_ff: 512
+batch_size: 2
+lr: 0.001
+steps: 10
+suffix_layers: 2
+chunk_size: 128
+far_frac: 0.0
+ttt_param_filter: "suffix_blocks,ln_f,head"
