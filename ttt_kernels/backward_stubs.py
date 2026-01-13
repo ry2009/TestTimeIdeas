@@ -56,8 +56,8 @@ def _attn_bwd_dv_kernel(
             offs_n_all = start_n_all + tl.arange(0, BLOCK_N)
             k_ptrs = k_ptr + pid_bh * stride_kb + offs_n_all[None, :] * stride_kn + offs_d[:, None] * stride_kk
             k = tl.load(k_ptrs, mask=(offs_n_all[None, :] < n_ctx) & (offs_d[:, None] < d_head), other=0.0)
-            k_t = tl.trans(k)
-            qk = tl.sum(q[:, None, :] * k_t[None, :, :], axis=2) * scale
+            qk = tl.dot(q, k) * scale
+            qk = qk.to(tl.float32)
             if causal:
                 mask = offs_m[:, None] < offs_n_all[None, :]
                 qk = tl.where(mask, -float('inf'), qk)
@@ -69,14 +69,14 @@ def _attn_bwd_dv_kernel(
         # Pass 2: compute p for current N tile only, accumulate dV
         k_ptrs_tile = k_ptr + pid_bh * stride_kb + offs_n[None, :] * stride_kn + offs_d[:, None] * stride_kk
         k_tile = tl.load(k_ptrs_tile, mask=(offs_n[None, :] < n_ctx) & (offs_d[:, None] < d_head), other=0.0)
-        k_tile_t = tl.trans(k_tile)
-        qk_tile = tl.sum(q[:, None, :] * k_tile_t[None, :, :], axis=2) * scale
+        qk_tile = tl.dot(q, k_tile) * scale
+        qk_tile = qk_tile.to(tl.float32)
         if causal:
             mask = offs_m[:, None] < offs_n[None, :]
             qk_tile = tl.where(mask, -float('inf'), qk_tile)
 
         p_tile = tl.exp(qk_tile - m_i[:, None]) / l_i[:, None]
-        dv += tl.sum(tl.trans(p_tile)[:, :, None] * do[None, :, :], axis=1)
+        dv += tl.dot(tl.trans(p_tile).to(tl.float16), do)
 
     dv_ptrs = dv_ptr + pid_bh * stride_dvb + offs_n[:, None] * stride_dvn + offs_d[None, :] * stride_dvk
     tl.store(dv_ptrs, dv, mask=(offs_n[:, None] < n_ctx) & (offs_d[None, :] < d_head))

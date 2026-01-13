@@ -58,9 +58,8 @@ def _attn_fwd_kernel(
         k_ptrs = k_ptr + pid_bh * stride_kb + offs_n[None, :] * stride_kn + offs_d[:, None] * stride_kk
         k = tl.load(k_ptrs, mask=(offs_n[None, :] < n_ctx) & (offs_d[:, None] < d_head), other=0.0)
 
-        # Manual matmul to avoid dot layout issues
-        k_t = tl.trans(k)  # (BLOCK_N, BLOCK_D)
-        qk = tl.sum(q[:, None, :] * k_t[None, :, :], axis=2) * scale
+        qk = tl.dot(q, k) * scale
+        qk = qk.to(tl.float32)
 
         if causal:
             mask = offs_m[:, None] < offs_n[None, :]
@@ -72,9 +71,8 @@ def _attn_fwd_kernel(
 
         v_ptrs = v_ptr + pid_bh * stride_vb + offs_n[:, None] * stride_vn + offs_d[None, :] * stride_vk
         v = tl.load(v_ptrs, mask=(offs_n[:, None] < n_ctx) & (offs_d[None, :] < d_head), other=0.0)
-        v = v.to(tl.float32)
-
-        acc = acc * tl.exp(m_i - m_i_new)[:, None] + tl.sum(exp_qk[:, :, None] * v[None, :, :], axis=1)
+        exp_qk_f16 = exp_qk.to(tl.float16)
+        acc = acc * tl.exp(m_i - m_i_new)[:, None] + tl.dot(exp_qk_f16, v)
         m_i = m_i_new
 
     out = acc / l_i[:, None]
