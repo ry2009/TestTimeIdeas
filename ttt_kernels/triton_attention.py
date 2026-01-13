@@ -70,6 +70,7 @@ def _attn_fwd_kernel(
 
         v_ptrs = v_ptr + pid_bh * stride_vb + offs_n[:, None] * stride_vn + offs_d[None, :] * stride_vk
         v = tl.load(v_ptrs, mask=(offs_n[:, None] < n_ctx) & (offs_d[None, :] < d_head), other=0.0)
+        v = v.to(tl.float32)
 
         acc = acc * tl.exp(m_i - m_i_new)[:, None] + tl.dot(exp_qk, v)
         m_i = m_i_new

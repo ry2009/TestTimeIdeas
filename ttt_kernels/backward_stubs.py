@@ -47,6 +47,7 @@ def _attn_bwd_dv_kernel(
         do_ptrs = do_ptr + pid_bh * stride_dob + offs_m[:, None] * stride_dom + offs_d[None, :] * stride_dok
         q = tl.load(q_ptrs, mask=(offs_m[:, None] < n_ctx) & (offs_d[None, :] < d_head), other=0.0)
         do = tl.load(do_ptrs, mask=(offs_m[:, None] < n_ctx) & (offs_d[None, :] < d_head), other=0.0)
+        do = do.to(tl.float32)
 
         # Pass 1: compute softmax stats (m_i, l_i) across all N
         m_i = tl.full((BLOCK_M,), -float('inf'), tl.float32)
