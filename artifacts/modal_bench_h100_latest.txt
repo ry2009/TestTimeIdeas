@@ -1,27 +1,31 @@
-Modal H100 run (forward + grad‑grad, recompute/recompute_manual/recompute_sdp/save_p)
+Modal H100 run (forward + grad‑grad, recompute/recompute_manual/recompute_sdp/recompute_sdp_auto/save_p)
 
 Forward (b=2,h=4,t=2048,d=128,fp16):
-  math   0.213 ms
-  triton 0.135 ms  (win)
+  math   0.211 ms
+  triton 0.131 ms  (win)
 
 Grad‑grad t=128,d=64 (fp16):
-  recompute        math 1.264 ms | triton 1.701 ms (loss)
-  recompute_manual math 1.199 ms | triton 1.683 ms (loss)
-  recompute_sdp    math 1.208 ms | triton 2.031 ms (loss)
-  save_p           math 1.284 ms | triton 1.117 ms (win)
+  recompute        math 1.207 ms | triton 1.731 ms (loss)
+  recompute_manual math 1.171 ms | triton 1.553 ms (loss)
+  recompute_sdp    math 1.197 ms | triton 1.698 ms (loss)
+  recompute_sdp_auto: FAILED (flash backward has no 2nd‑order)
+  save_p           math 1.183 ms | triton 1.118 ms (win)
 
 Grad‑grad t=512,d=128 (fp16):
-  recompute        math 1.300 ms | triton 1.849 ms (loss)
-  recompute_manual math 1.668 ms | triton 1.736 ms (loss)
-  recompute_sdp    math 1.470 ms | triton 1.926 ms (loss)
-  save_p           math 1.456 ms | triton 1.304 ms (win)
+  recompute        math 1.308 ms | triton 1.764 ms (loss)
+  recompute_manual math 1.278 ms | triton 1.789 ms (loss)
+  recompute_sdp    math 1.280 ms | triton 1.924 ms (loss)
+  recompute_sdp_auto: FAILED (flash backward has no 2nd‑order)
+  save_p           math 1.277 ms | triton 1.179 ms (win)
 
 Grad‑grad t=1024,d=128 (fp16):
-  recompute        math 1.427 ms | triton 1.886 ms (loss)
-  recompute_manual math 1.405 ms | triton 1.781 ms (loss)
-  recompute_sdp    math 1.307 ms | triton 1.850 ms (loss)
-  save_p           math 1.278 ms | triton 1.125 ms (win)
+  recompute        math 1.256 ms | triton 1.707 ms (loss)
+  recompute_manual math 1.280 ms | triton 1.635 ms (loss)
+  recompute_sdp    math 1.224 ms | triton 1.875 ms (loss)
+  recompute_sdp_auto: FAILED (flash backward has no 2nd‑order)
+  save_p           math 1.327 ms | triton 1.071 ms (win)
 
 Notes:
 - recompute_compiled failed: torch.compile does not support double backward.
+- recompute_sdp_auto fails: flash backward has no 2nd‑order.
 - save_p trades memory for speed; recompute remains slower.

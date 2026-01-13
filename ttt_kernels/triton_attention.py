@@ -33,6 +33,13 @@ def _attention_sdp(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, causal: bo
         )
 
 
+def _attention_sdp_auto(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, causal: bool, scale: float) -> torch.Tensor:
+    # Let PyTorch pick the fastest backend (may be Flash/mem‑efficient)
+    return torch.nn.functional.scaled_dot_product_attention(
+        q, k, v, attn_mask=None, dropout_p=0.0, is_causal=causal, scale=scale
+    )
+
+
 def _attention_with_probs(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, causal: bool, scale: float):
     scores = torch.matmul(q, k.transpose(-2, -1)) * scale
     if causal:
@@ -203,6 +210,12 @@ class TritonAttentionFn(torch.autograd.Function):
         if ctx.bwd_mode == 'recompute_sdp':
             with torch.enable_grad():
                 out = _attention_sdp(q, k, v, causal, scale)
+                dq, dk, dv = torch.autograd.grad(out, (q, k, v), grad_out, create_graph=torch.is_grad_enabled())
+            return dq, dk, dv, None, None, None
+
+        if ctx.bwd_mode == 'recompute_sdp_auto':
+            with torch.enable_grad():
+                out = _attention_sdp_auto(q, k, v, causal, scale)
                 dq, dk, dv = torch.autograd.grad(out, (q, k, v), grad_out, create_graph=torch.is_grad_enabled())
             return dq, dk, dv, None, None, None
 
