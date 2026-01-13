@@ -77,9 +77,9 @@ def _manual_recompute_grads(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, g
 if _TRITON_AVAILABLE:
     @triton.autotune(
         configs=[
-            triton.Config({'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_D': 64}, num_warps=4, num_stages=2),
-            triton.Config({'BLOCK_M': 128, 'BLOCK_N': 128, 'BLOCK_D': 64}, num_warps=8, num_stages=3),
-            triton.Config({'BLOCK_M': 128, 'BLOCK_N': 64, 'BLOCK_D': 64}, num_warps=8, num_stages=3),
+            triton.Config({'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_D': 128}, num_warps=4, num_stages=2),
+            triton.Config({'BLOCK_M': 128, 'BLOCK_N': 128, 'BLOCK_D': 128}, num_warps=8, num_stages=3),
+            triton.Config({'BLOCK_M': 128, 'BLOCK_N': 64, 'BLOCK_D': 128}, num_warps=8, num_stages=3),
         ],
         key=['n_ctx', 'd_head'],
     )
@@ -139,9 +139,9 @@ if _TRITON_AVAILABLE:
 
     @triton.autotune(
         configs=[
-            triton.Config({'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_D': 64}, num_warps=4, num_stages=2),
-            triton.Config({'BLOCK_M': 128, 'BLOCK_N': 128, 'BLOCK_D': 64}, num_warps=8, num_stages=3),
-            triton.Config({'BLOCK_M': 128, 'BLOCK_N': 64, 'BLOCK_D': 64}, num_warps=8, num_stages=3),
+            triton.Config({'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_D': 128}, num_warps=4, num_stages=2),
+            triton.Config({'BLOCK_M': 128, 'BLOCK_N': 128, 'BLOCK_D': 128}, num_warps=8, num_stages=3),
+            triton.Config({'BLOCK_M': 128, 'BLOCK_N': 64, 'BLOCK_D': 128}, num_warps=8, num_stages=3),
         ],
         key=['n_ctx', 'd_head'],
     )
@@ -166,7 +166,6 @@ if _TRITON_AVAILABLE:
 
         offs_m = pid_m * BLOCK_M + tl.arange(0, BLOCK_M)
         offs_d = tl.arange(0, BLOCK_D)
-
         q_ptrs = q_ptr + pid_bh * stride_qb + offs_m[:, None] * stride_qm + offs_d[None, :] * stride_qk
         q = tl.load(q_ptrs, mask=(offs_m[:, None] < n_ctx) & (offs_d[None, :] < d_head), other=0.0)
 
@@ -208,9 +207,9 @@ if _TRITON_AVAILABLE:
 
     @triton.autotune(
         configs=[
-            triton.Config({'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_D': 64}, num_warps=4, num_stages=2),
-            triton.Config({'BLOCK_M': 128, 'BLOCK_N': 128, 'BLOCK_D': 64}, num_warps=8, num_stages=3),
-            triton.Config({'BLOCK_M': 128, 'BLOCK_N': 64, 'BLOCK_D': 64}, num_warps=8, num_stages=3),
+            triton.Config({'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_D': 128}, num_warps=4, num_stages=2),
+            triton.Config({'BLOCK_M': 128, 'BLOCK_N': 128, 'BLOCK_D': 128}, num_warps=8, num_stages=3),
+            triton.Config({'BLOCK_M': 128, 'BLOCK_N': 64, 'BLOCK_D': 128}, num_warps=8, num_stages=3),
         ],
         key=['n_ctx', 'd_head'],
     )

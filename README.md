@@ -32,9 +32,9 @@ triton forward: Y.YYY ms
 ```
 
 Latest Modal H100 run (saved in `artifacts/modal_bench_h100_latest.txt`):
-- **forward**: variable (latest run 0.242 ms vs 0.213 ms; needs tuning)
+- **forward**: triton 0.139 ms vs math 0.212 ms (win)
 - **grad‑grad (recompute)**: still slower than math
-- **grad‑grad (save_p)**: faster than math (win, memory tradeoff), incl. **t=8192**: 3.454 ms vs 4.094 ms
+- **grad‑grad (save_p)**: faster than math (win, memory tradeoff), incl. **t=8192**: 3.457 ms vs 4.064 ms
 
 Current status: **recompute modes are still slower; only `save_p` wins.**
 
