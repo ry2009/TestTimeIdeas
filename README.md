@@ -1,12 +1,16 @@
 # TestTimeIdeas
 
-Kernel prototypes for TTT-E2E meta-learning.
+Kernel prototypes for TTT‑E2E meta‑learning (grad‑grad safe attention).
 
 ## What’s here
 
-- `ttt_kernels/triton_attention.py`: Triton forward kernel + gradgrad-safe backward (PyTorch recompute). Optional demo Triton backward for `dv`.
+- `ttt_kernels/triton_attention.py`
+  - **Custom Triton forward kernel** for attention
+  - **Grad‑grad safe backward** (PyTorch recompute)
+  - Optional demo Triton backward for `dv` only (still grad‑grad safe because `dq/dk` recompute)
 
-This is a **kernel-nerd demo**: custom Triton kernel for attention forward, still supports gradients-of-gradients via recompute, so it is usable inside meta-learning (TTT-E2E).
+This is a **kernel‑nerd demo**: a real Triton forward kernel with meta‑learning compatibility.
+It’s the starting point for full forward/backward/double‑backward kernels.
 
 ## Run on H100
 
@@ -21,7 +25,20 @@ math forward:   X.XXX ms
 triton forward: Y.YYY ms
 ```
 
+## Grad‑grad check
+
+```bash
+python -m tests.test_gradgrad
+```
+
 ## Notes
 
-- Full speed + gradgrad requires custom backward **and** double-backward kernels. This repo is the stepping stone.
-- The `use_triton_backward=True` path is a demo for `dv` only; `dq/dk` still use recompute to preserve gradgrad safety.
+- Full speed + grad‑grad requires **custom backward** and **double‑backward** kernels.
+- This repo proves the forward‑kernel work and keeps meta‑gradients correct.
+- Designed to integrate into TTT‑E2E training loops (swap attention backend).
+
+## Next targets
+
+1. Triton backward for Q/K/V grads (reduce recompute)
+2. Double‑backward kernels (true grad‑grad speed)
+3. Autotune block sizes and add FlashAttention parity tests
