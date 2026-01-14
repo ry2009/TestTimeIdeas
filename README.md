@@ -49,11 +49,18 @@ Correctness spot‑check (`tests/test_gradgrad_compare.py`, b=1 h=1 t=64 d=64):
 Grad‑grad sweep (H100, `save_p_triton_full`, b=1 h=1 d=64) saved in:
 - `artifacts/gradgrad_sweep.csv`
 - `artifacts/gradgrad_sweep.png`
+- `artifacts/gradgrad_sweep_speedup.png`
 
 Key points from sweep:
 - **non‑causal T=16k:** 11.466 ms vs 15.023 ms (≈ **1.31×**)
 - **causal T=16k:** 13.649 ms vs 19.350 ms (≈ **1.42×**)
 - crossover happens around **8k**, launch overhead dominates smaller T.
+
+Repro sweep:
+```bash
+python tests/bench_gradgrad_sweep.py --b 1 --h 1 --d 64 --dtype fp16 --iters 8 --warmup 2 --repeats 4 \\
+  --bwd_mode save_p_triton_full --ts 512,1024,2048,4096,8192,16384 --out artifacts/gradgrad_sweep.csv
+```
 
 ## Grad‑grad check
 
