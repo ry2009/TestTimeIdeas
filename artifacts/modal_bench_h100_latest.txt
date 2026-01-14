@@ -1,93 +1,102 @@
-Run: ap-PlwuciIpFJ61KNQGvVChuj
+Run: ap-Y6ePDkTtAu2CKhGvsabBMi
 
 == forward b=2 h=4 t=2048 d=128 dtype=fp16 causal=False ==
 math forward:   0.212 ms
-triton forward: 0.133 ms
+triton forward: 0.136 ms
 
 == gradgrad recompute b=2 h=2 t=128 d=64 dtype=fp16 causal=False ==
-gradgrad math:   1.137 ms
-gradgrad triton: 1.861 ms
+gradgrad math:   1.155 ms
+gradgrad triton: 1.630 ms
 
 == gradgrad recompute_manual b=2 h=2 t=128 d=64 dtype=fp16 causal=False ==
-gradgrad math:   1.298 ms
-gradgrad triton: 1.714 ms
+gradgrad math:   1.181 ms
+gradgrad triton: 1.559 ms
 
 == gradgrad recompute_sdp b=2 h=2 t=128 d=64 dtype=fp16 causal=False ==
-gradgrad math:   1.226 ms
-gradgrad triton: 1.906 ms
+gradgrad math:   1.143 ms
+gradgrad triton: 1.945 ms
 
 == gradgrad save_p b=2 h=2 t=128 d=64 dtype=fp16 causal=False ==
-gradgrad math:   1.278 ms
-gradgrad triton: 1.138 ms
+gradgrad math:   1.107 ms
+gradgrad triton: 1.029 ms
 
 == gradgrad save_p_triton_bwd b=2 h=2 t=128 d=64 dtype=fp16 causal=False ==
-gradgrad math:   1.144 ms
-gradgrad triton: 1.330 ms
+gradgrad math:   1.516 ms
+gradgrad triton: 1.632 ms
 
 == gradgrad save_p_triton_full b=2 h=2 t=128 d=64 dtype=fp16 causal=False ==
-gradgrad math:   1.212 ms
-gradgrad triton: 1.776 ms
+gradgrad math:   1.334 ms
+gradgrad triton: 2.067 ms
 
 == gradgrad recompute b=1 h=4 t=512 d=128 dtype=fp16 causal=False ==
-gradgrad math:   1.254 ms
-gradgrad triton: 1.776 ms
+gradgrad math:   1.272 ms
+gradgrad triton: 1.887 ms
 
 == gradgrad recompute_manual b=1 h=4 t=512 d=128 dtype=fp16 causal=False ==
-gradgrad math:   1.248 ms
-gradgrad triton: 1.727 ms
+gradgrad math:   1.193 ms
+gradgrad triton: 1.637 ms
 
 == gradgrad recompute_sdp b=1 h=4 t=512 d=128 dtype=fp16 causal=False ==
-gradgrad math:   1.274 ms
-gradgrad triton: 1.826 ms
+gradgrad math:   1.398 ms
+gradgrad triton: 1.854 ms
 
 == gradgrad save_p b=1 h=4 t=512 d=128 dtype=fp16 causal=False ==
-gradgrad math:   1.284 ms
-gradgrad triton: 1.169 ms
-
-== gradgrad save_p_triton_bwd b=1 h=4 t=512 d=128 dtype=fp16 causal=False ==
-gradgrad math:   1.358 ms
-gradgrad triton: 1.428 ms
-
-== gradgrad save_p_triton_full b=1 h=4 t=512 d=128 dtype=fp16 causal=False ==
-gradgrad math:   1.276 ms
-gradgrad triton: 1.931 ms
-
-== gradgrad recompute b=1 h=4 t=1024 d=128 dtype=fp16 causal=False ==
-gradgrad math:   1.215 ms
-gradgrad triton: 1.763 ms
-
-== gradgrad recompute_manual b=1 h=4 t=1024 d=128 dtype=fp16 causal=False ==
-gradgrad math:   1.242 ms
-gradgrad triton: 1.643 ms
-
-== gradgrad recompute_sdp b=1 h=4 t=1024 d=128 dtype=fp16 causal=False ==
-gradgrad math:   1.316 ms
-gradgrad triton: 1.853 ms
-
-== gradgrad save_p b=1 h=4 t=1024 d=128 dtype=fp16 causal=False ==
-gradgrad math:   1.215 ms
-gradgrad triton: 1.136 ms
-
-== gradgrad save_p_triton_bwd b=1 h=4 t=1024 d=128 dtype=fp16 causal=False ==
-gradgrad math:   1.280 ms
+gradgrad math:   1.342 ms
 gradgrad triton: 1.348 ms
 
+== gradgrad save_p_triton_bwd b=1 h=4 t=512 d=128 dtype=fp16 causal=False ==
+gradgrad math:   1.206 ms
+gradgrad triton: 1.382 ms
+
+== gradgrad save_p_triton_full b=1 h=4 t=512 d=128 dtype=fp16 causal=False ==
+gradgrad math:   1.247 ms
+gradgrad triton: 1.952 ms
+
+== gradgrad recompute b=1 h=4 t=1024 d=128 dtype=fp16 causal=False ==
+gradgrad math:   1.192 ms
+gradgrad triton: 1.764 ms
+
+== gradgrad recompute_manual b=1 h=4 t=1024 d=128 dtype=fp16 causal=False ==
+gradgrad math:   1.204 ms
+gradgrad triton: 1.618 ms
+
+== gradgrad recompute_sdp b=1 h=4 t=1024 d=128 dtype=fp16 causal=False ==
+gradgrad math:   1.226 ms
+gradgrad triton: 1.791 ms
+
+== gradgrad save_p b=1 h=4 t=1024 d=128 dtype=fp16 causal=False ==
+gradgrad math:   1.258 ms
+gradgrad triton: 1.109 ms
+
+== gradgrad save_p_triton_bwd b=1 h=4 t=1024 d=128 dtype=fp16 causal=False ==
+gradgrad math:   1.184 ms
+gradgrad triton: 1.315 ms
+
 == gradgrad save_p_triton_full b=1 h=4 t=1024 d=128 dtype=fp16 causal=False ==
-gradgrad math:   1.255 ms
-gradgrad triton: 2.071 ms
+gradgrad math:   1.247 ms
+gradgrad triton: 1.907 ms
 
 == gradgrad recompute b=1 h=1 t=8192 d=64 dtype=fp16 causal=False ==
-gradgrad math:   4.056 ms
-gradgrad triton: 4.899 ms
+gradgrad math:   4.089 ms
+gradgrad triton: 4.893 ms
 
 == gradgrad save_p b=1 h=1 t=8192 d=64 dtype=fp16 causal=False ==
-gradgrad math:   4.058 ms
-gradgrad triton: 3.413 ms
+gradgrad math:   4.063 ms
+gradgrad triton: 3.417 ms
 
 == gradgrad save_p_triton_bwd b=1 h=1 t=8192 d=64 dtype=fp16 causal=False ==
-gradgrad math:   4.054 ms
-gradgrad triton: 3.488 ms
+gradgrad math:   4.062 ms
+gradgrad triton: 3.499 ms
 
 == gradgrad save_p_triton_full b=1 h=1 t=8192 d=64 dtype=fp16 causal=False ==
-gradgrad math:   4.061 ms
-gradgrad triton: 3.599 ms
+gradgrad math:   4.063 ms
+gradgrad triton: 3.632 ms
+
+== gradgrad save_p_triton_full b=1 h=1 t=8192 d=64 dtype=fp16 causal=True ==
+gradgrad math:   5.179 ms
+gradgrad triton: 4.066 ms
+
+== gradgrad compare save_p_triton_full vs math ==
+forward max abs err: 0.0000e+00, mean abs err: 0.0000e+00
+grad max abs err (q,k,v): [5.960464477539062e-07, 5.960464477539062e-07, 0.0]
+gradgrad max abs err (q,k,v): [0.0, 0.0, 0.0]

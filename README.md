@@ -37,8 +37,14 @@ Latest Modal H100 run (saved in `artifacts/modal_bench_h100_latest.txt`):
 - **grad‑grad (recompute)**: still slower than math (expected).
 - **save_p** (cached softmax, PyTorch mats) is fastest at small/medium T.
 - **save_p_triton_full** (Triton dV + rowsum + dQ/dK, grad‑grad safe) wins at long context:
-  - T=8192: **3.599 ms vs 4.061 ms** (≈ **1.13×** faster).
+  - T=8192 non‑causal: **3.632 ms vs 4.063 ms** (≈ **1.12×** faster).
+  - T=8192 causal: **4.066 ms vs 5.179 ms** (≈ **1.27×** faster).
   - Small T has launch overhead; expect parity only at larger T.
+
+Correctness spot‑check (`tests/test_gradgrad_compare.py`, b=1 h=1 t=64 d=64):
+- forward max abs err: **0.0**
+- grad max abs err (q,k,v): **~6e‑7**
+- grad‑grad max abs err (q,k,v): **0.0**
 
 ## Grad‑grad check
 
