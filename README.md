@@ -46,6 +46,15 @@ Correctness spot‑check (`tests/test_gradgrad_compare.py`, b=1 h=1 t=64 d=64):
 - grad max abs err (q,k,v): **~6e‑7**
 - grad‑grad max abs err (q,k,v): **0.0**
 
+Grad‑grad sweep (H100, `save_p_triton_full`, b=1 h=1 d=64) saved in:
+- `artifacts/gradgrad_sweep.csv`
+- `artifacts/gradgrad_sweep.png`
+
+Key points from sweep:
+- **non‑causal T=16k:** 11.466 ms vs 15.023 ms (≈ **1.31×**)
+- **causal T=16k:** 13.649 ms vs 19.350 ms (≈ **1.42×**)
+- crossover happens around **8k**, launch overhead dominates smaller T.
+
 ## Grad‑grad check
 
 ```bash

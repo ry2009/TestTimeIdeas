@@ -74,6 +74,8 @@ def run_bench():
     out.append(_run("python tests/bench_gradgrad.py --b 1 --h 1 --t 8192 --d 64 --dtype fp16 --iters 5 --warmup 2 --bwd_mode save_p_triton_full"))
     out.append(_run("python tests/bench_gradgrad.py --b 1 --h 1 --t 8192 --d 64 --dtype fp16 --iters 5 --warmup 2 --causal --bwd_mode save_p_triton_full"))
     out.append(_run("python tests/test_gradgrad_compare.py"))
+    out.append(_run("python tests/bench_gradgrad_sweep.py --b 1 --h 1 --d 64 --dtype fp16 --iters 8 --warmup 2 --repeats 4 --bwd_mode save_p_triton_full --ts 512,1024,2048,4096,8192,16384 --out /tmp/gradgrad_sweep.csv"))
+    out.append(_run("cat /tmp/gradgrad_sweep.csv"))
     return "\n".join(out)
 
 
