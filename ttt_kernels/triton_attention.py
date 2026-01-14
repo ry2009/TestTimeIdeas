@@ -352,12 +352,20 @@ class TritonAttentionFn(torch.autograd.Function):
             # Use saved softmax probabilities to avoid recompute
             (p,) = ctx.saved_probs
             if ctx.bwd_mode == 'save_p_triton_full':
-                dv = backward_stubs.triton_attn_bwd_dv_from_p(p, grad_out)
-                rowsum = backward_stubs.triton_attn_rowsum_from_p(p, grad_out, v, causal=causal)
-                dq, dk = backward_stubs.triton_attn_bwd_dqdk_from_p(q, k, v, grad_out, p, rowsum, causal=causal, scale=scale)
+                if torch.is_grad_enabled():
+                    dv = backward_stubs.TritonDvFn.apply(p, grad_out)
+                    rowsum = backward_stubs.TritonRowSumFn.apply(p, grad_out, v, causal)
+                    dq, dk = backward_stubs.TritonDqDkFn.apply(q, k, v, grad_out, p, rowsum, scale, causal)
+                else:
+                    dv = backward_stubs.triton_attn_bwd_dv_from_p(p, grad_out)
+                    rowsum = backward_stubs.triton_attn_rowsum_from_p(p, grad_out, v, causal=causal)
+                    dq, dk = backward_stubs.triton_attn_bwd_dqdk_from_p(q, k, v, grad_out, p, rowsum, causal=causal, scale=scale)
             else:
                 if ctx.bwd_mode == 'save_p_triton_bwd':
-                    dv = backward_stubs.triton_attn_bwd_dv_from_p(p, grad_out)
+                    if torch.is_grad_enabled():
+                        dv = backward_stubs.TritonDvFn.apply(p, grad_out)
+                    else:
+                        dv = backward_stubs.triton_attn_bwd_dv_from_p(p, grad_out)
                 else:
                     # dV = P^T @ dO
                     dv = torch.matmul(p.transpose(-2, -1), grad_out)

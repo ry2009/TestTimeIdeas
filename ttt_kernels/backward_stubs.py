@@ -6,6 +6,7 @@ backward + double-backward.
 """
 
 import torch
+from torch.autograd import Function
 
 try:
     import triton
@@ -422,7 +423,97 @@ if _TRITON_AVAILABLE:
         )
 
         return dqh.reshape(b, h, t, d), dkh.reshape(b, h, t, d)
-else:
+
+
+class TritonDvFn(Function):
+    @staticmethod
+    def forward(ctx, p, do):
+        ctx.save_for_backward(p, do)
+        return triton_attn_bwd_dv_from_p(p, do)
+
+    @staticmethod
+    def backward(ctx, grad_dv):
+        p, do = ctx.saved_tensors
+        grad_p = torch.matmul(do, grad_dv.transpose(-2, -1))
+        grad_do = torch.matmul(p, grad_dv)
+        return grad_p, grad_do
+
+
+class TritonRowSumFn(Function):
+    @staticmethod
+    def forward(ctx, p, do, v, causal: bool):
+        ctx.save_for_backward(p, do, v)
+        ctx.causal = causal
+        return triton_attn_rowsum_from_p(p, do, v, causal=causal)
+
+    @staticmethod
+    def backward(ctx, grad_rs):
+        p, do, v = ctx.saved_tensors
+        orig_dtype = p.dtype
+        grad_rs = grad_rs.to(orig_dtype)
+        # dp = do @ v^T
+        dp = torch.matmul(do, v.transpose(-2, -1))
+        grad_p = grad_rs.unsqueeze(-1) * dp
+        grad_do = grad_rs.unsqueeze(-1) * torch.matmul(p, v)
+        grad_v = torch.matmul(p.transpose(-2, -1), grad_rs.unsqueeze(-1) * do)
+        return grad_p.to(orig_dtype), grad_do.to(orig_dtype), grad_v.to(orig_dtype), None
+
+
+class TritonDqDkFn(Function):
+    @staticmethod
+    def forward(ctx, q, k, v, do, p, rowsum, scale: float, causal: bool):
+        ctx.save_for_backward(q, k, v, do, p, rowsum)
+        ctx.scale = scale
+        ctx.causal = causal
+        return triton_attn_bwd_dqdk_from_p(q, k, v, do, p, rowsum, causal=causal, scale=scale)
+
+    @staticmethod
+    def backward(ctx, grad_dq, grad_dk):
+        q, k, v, do, p, rowsum = ctx.saved_tensors
+        scale = ctx.scale
+        # Manual second-order-safe backward (torch ops keep graph)
+        orig_dtype = q.dtype
+        qf = q
+        kf = k
+        vf = v
+        dof = do
+        pf = p
+        rowsumf = rowsum.to(pf.dtype)
+
+        gdq = (grad_dq.to(orig_dtype) if grad_dq is not None else torch.zeros_like(qf)).to(pf.dtype)
+        gdk = (grad_dk.to(orig_dtype) if grad_dk is not None else torch.zeros_like(kf)).to(pf.dtype)
+
+        # Forward intermediates
+        dp = torch.matmul(dof, vf.transpose(-2, -1))
+        ds = (dp - rowsumf.unsqueeze(-1)) * pf
+
+        # Backprop through dq/dk
+        grad_ds = (torch.matmul(gdq, kf.transpose(-2, -1)) +
+                   torch.matmul(gdk, qf.transpose(-2, -1))) * scale
+        grad_q = torch.matmul(ds, gdk) * scale
+        grad_k = torch.matmul(ds.transpose(-2, -1), gdq) * scale
+
+        # Backprop through ds = (dp - rowsum) * p
+        grad_dp = grad_ds * pf
+        grad_p = grad_ds * (dp - rowsumf.unsqueeze(-1))
+        grad_rowsum = -(grad_ds * pf).sum(dim=-1)
+
+        # Backprop through dp = do @ v^T
+        grad_do = torch.matmul(grad_dp, vf)
+        grad_v = torch.matmul(grad_dp.transpose(-2, -1), dof)
+
+        return (
+            grad_q.to(orig_dtype),
+            grad_k.to(orig_dtype),
+            grad_v.to(orig_dtype),
+            grad_do.to(orig_dtype),
+            grad_p.to(orig_dtype),
+            grad_rowsum.to(orig_dtype),
+            None,
+            None,
+        )
+
+if not _TRITON_AVAILABLE:
     def triton_attn_bwd_dv(*args, **kwargs):
         raise RuntimeError('Triton is not available')
     def triton_attn_bwd_dv_from_p(*args, **kwargs):

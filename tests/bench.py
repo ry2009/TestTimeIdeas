@@ -69,6 +69,7 @@ def main():
     q = torch.randn(args.b, args.h, args.t, args.d, device=device, dtype=dtype)
     k = torch.randn(args.b, args.h, args.t, args.d, device=device, dtype=dtype)
     v = torch.randn(args.b, args.h, args.t, args.d, device=device, dtype=dtype)
+    print(f'== forward b={args.b} h={args.h} t={args.t} d={args.d} dtype={args.dtype} causal={args.causal} ==')
 
     math_fn = lambda q, k, v: _math_attention(q, k, v, args.causal, scale)
     if args.compile:

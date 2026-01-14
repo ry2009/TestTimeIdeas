@@ -1,78 +1,93 @@
-Modal H100 run: https://modal.com/apps/ryanmathieu123/main/ap-qjZqyRaPWKqW2VOesLeAts
+Run: ap-PlwuciIpFJ61KNQGvVChuj
 
+== forward b=2 h=4 t=2048 d=128 dtype=fp16 causal=False ==
 math forward:   0.212 ms
-triton forward: 0.134 ms
+triton forward: 0.133 ms
 
-# t=128 d=64
-recompute (grad‑grad safe)
-  gradgrad math:   1.185 ms
-  gradgrad triton: 1.790 ms
-recompute_manual (grad‑grad safe)
-  gradgrad math:   1.179 ms
-  gradgrad triton: 1.668 ms
-recompute_sdp (grad‑grad safe)
-  gradgrad math:   1.189 ms
-  gradgrad triton: 1.790 ms
-save_p (first‑order only; cached softmax)
-  math:   1.251 ms
-  triton: 0.523 ms
-save_p_triton_bwd (first‑order only; Triton dV)
-  math:   1.169 ms
-  triton: 0.709 ms
-save_p_triton_full (first‑order only; Triton dP/dQ/dK)
-  math:   1.173 ms
-  triton: 0.959 ms
+== gradgrad recompute b=2 h=2 t=128 d=64 dtype=fp16 causal=False ==
+gradgrad math:   1.137 ms
+gradgrad triton: 1.861 ms
 
-# t=512 d=128
-recompute (grad‑grad safe)
-  gradgrad math:   1.289 ms
-  gradgrad triton: 1.798 ms
-recompute_manual (grad‑grad safe)
-  gradgrad math:   1.311 ms
-  gradgrad triton: 1.715 ms
-recompute_sdp (grad‑grad safe)
-  gradgrad math:   1.261 ms
-  gradgrad triton: 1.916 ms
-save_p (first‑order only)
-  math:   1.281 ms
-  triton: 0.545 ms
-save_p_triton_bwd (first‑order only)
-  math:   1.228 ms
-  triton: 0.738 ms
-save_p_triton_full (first‑order only)
-  math:   1.289 ms
-  triton: 0.983 ms
+== gradgrad recompute_manual b=2 h=2 t=128 d=64 dtype=fp16 causal=False ==
+gradgrad math:   1.298 ms
+gradgrad triton: 1.714 ms
 
-# t=1024 d=128
-recompute (grad‑grad safe)
-  gradgrad math:   1.185 ms
-  gradgrad triton: 1.751 ms
-recompute_manual (grad‑grad safe)
-  gradgrad math:   1.236 ms
-  gradgrad triton: 1.625 ms
-recompute_sdp (grad‑grad safe)
-  gradgrad math:   1.273 ms
-  gradgrad triton: 1.848 ms
-save_p (first‑order only)
-  math:   1.252 ms
-  triton: 0.503 ms
-save_p_triton_bwd (first‑order only)
-  math:   1.335 ms
-  triton: 0.717 ms
-save_p_triton_full (first‑order only)
-  math:   1.304 ms
-  triton: 0.964 ms
+== gradgrad recompute_sdp b=2 h=2 t=128 d=64 dtype=fp16 causal=False ==
+gradgrad math:   1.226 ms
+gradgrad triton: 1.906 ms
 
-# t=8192 d=64 (b=1,h=1)
-recompute (grad‑grad safe)
-  gradgrad math:   4.054 ms
-  gradgrad triton: 4.905 ms
-save_p (first‑order only)
-  math:   4.051 ms
-  triton: 1.112 ms
-save_p_triton_bwd (first‑order only)
-  math:   4.060 ms
-  triton: 1.187 ms
-save_p_triton_full (first‑order only)
-  math:   4.091 ms
-  triton: 1.568 ms
+== gradgrad save_p b=2 h=2 t=128 d=64 dtype=fp16 causal=False ==
+gradgrad math:   1.278 ms
+gradgrad triton: 1.138 ms
+
+== gradgrad save_p_triton_bwd b=2 h=2 t=128 d=64 dtype=fp16 causal=False ==
+gradgrad math:   1.144 ms
+gradgrad triton: 1.330 ms
+
+== gradgrad save_p_triton_full b=2 h=2 t=128 d=64 dtype=fp16 causal=False ==
+gradgrad math:   1.212 ms
+gradgrad triton: 1.776 ms
+
+== gradgrad recompute b=1 h=4 t=512 d=128 dtype=fp16 causal=False ==
+gradgrad math:   1.254 ms
+gradgrad triton: 1.776 ms
+
+== gradgrad recompute_manual b=1 h=4 t=512 d=128 dtype=fp16 causal=False ==
+gradgrad math:   1.248 ms
+gradgrad triton: 1.727 ms
+
+== gradgrad recompute_sdp b=1 h=4 t=512 d=128 dtype=fp16 causal=False ==
+gradgrad math:   1.274 ms
+gradgrad triton: 1.826 ms
+
+== gradgrad save_p b=1 h=4 t=512 d=128 dtype=fp16 causal=False ==
+gradgrad math:   1.284 ms
+gradgrad triton: 1.169 ms
+
+== gradgrad save_p_triton_bwd b=1 h=4 t=512 d=128 dtype=fp16 causal=False ==
+gradgrad math:   1.358 ms
+gradgrad triton: 1.428 ms
+
+== gradgrad save_p_triton_full b=1 h=4 t=512 d=128 dtype=fp16 causal=False ==
+gradgrad math:   1.276 ms
+gradgrad triton: 1.931 ms
+
+== gradgrad recompute b=1 h=4 t=1024 d=128 dtype=fp16 causal=False ==
+gradgrad math:   1.215 ms
+gradgrad triton: 1.763 ms
+
+== gradgrad recompute_manual b=1 h=4 t=1024 d=128 dtype=fp16 causal=False ==
+gradgrad math:   1.242 ms
+gradgrad triton: 1.643 ms
+
+== gradgrad recompute_sdp b=1 h=4 t=1024 d=128 dtype=fp16 causal=False ==
+gradgrad math:   1.316 ms
+gradgrad triton: 1.853 ms
+
+== gradgrad save_p b=1 h=4 t=1024 d=128 dtype=fp16 causal=False ==
+gradgrad math:   1.215 ms
+gradgrad triton: 1.136 ms
+
+== gradgrad save_p_triton_bwd b=1 h=4 t=1024 d=128 dtype=fp16 causal=False ==
+gradgrad math:   1.280 ms
+gradgrad triton: 1.348 ms
+
+== gradgrad save_p_triton_full b=1 h=4 t=1024 d=128 dtype=fp16 causal=False ==
+gradgrad math:   1.255 ms
+gradgrad triton: 2.071 ms
+
+== gradgrad recompute b=1 h=1 t=8192 d=64 dtype=fp16 causal=False ==
+gradgrad math:   4.056 ms
+gradgrad triton: 4.899 ms
+
+== gradgrad save_p b=1 h=1 t=8192 d=64 dtype=fp16 causal=False ==
+gradgrad math:   4.058 ms
+gradgrad triton: 3.413 ms
+
+== gradgrad save_p_triton_bwd b=1 h=1 t=8192 d=64 dtype=fp16 causal=False ==
+gradgrad math:   4.054 ms
+gradgrad triton: 3.488 ms
+
+== gradgrad save_p_triton_full b=1 h=1 t=8192 d=64 dtype=fp16 causal=False ==
+gradgrad math:   4.061 ms
+gradgrad triton: 3.599 ms

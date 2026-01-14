@@ -70,6 +70,7 @@ def main():
     q = torch.randn(args.b, args.h, args.t, args.d, device=device, dtype=dtype, requires_grad=True)
     k = torch.randn(args.b, args.h, args.t, args.d, device=device, dtype=dtype, requires_grad=True)
     v = torch.randn(args.b, args.h, args.t, args.d, device=device, dtype=dtype, requires_grad=True)
+    print(f'== gradgrad {args.bwd_mode} b={args.b} h={args.h} t={args.t} d={args.d} dtype={args.dtype} causal={args.causal} ==')
 
     def _run_math():
         out = _math_attention(q, k, v, args.causal, scale)
@@ -82,8 +83,6 @@ def main():
         out = triton_attention(q, k, v, causal=args.causal, bwd_mode=args.bwd_mode)
         loss = out.float().mean()
         grads = torch.autograd.grad(loss, (q, k, v), create_graph=True)
-        if not all(g.requires_grad for g in grads):
-            return
         s = sum([g.pow(2).mean() for g in grads])
         torch.autograd.grad(s, (q, k, v))
 
