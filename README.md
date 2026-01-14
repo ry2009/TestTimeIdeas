@@ -62,6 +62,9 @@ python tests/bench_gradgrad_sweep.py --b 1 --h 1 --d 64 --dtype fp16 --iters 8 -
   --bwd_mode save_p_triton_full --ts 512,1024,2048,4096,8192,16384 --out artifacts/gradgrad_sweep.csv
 ```
 
+One‑pager PDF (for sharing):
+- `artifacts/ttt_gradgrad_onepager.pdf`
+
 ## Grad‑grad check
 
 ```bash
